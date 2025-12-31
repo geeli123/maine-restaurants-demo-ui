@@ -8,7 +8,6 @@ import './styles/App.css'
 
 function App() {
   const [searchOptions, setSearchOptions] = useState({
-    matchThreshold: 0.7,
     matchCount: 10
   })
 
@@ -35,7 +34,7 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Maine Restaurant Search</h1>
-        <p className="subtitle">Powered by AI semantic search</p>
+        <p className="subtitle">Currently serving Portland Maine restaurants</p>
       </header>
 
       <main className="app-main">
@@ -49,21 +48,6 @@ function App() {
         <details className="search-options">
           <summary>Advanced Options</summary>
           <div className="options-content">
-            <label>
-              <span>Similarity Threshold: {searchOptions.matchThreshold}</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={searchOptions.matchThreshold}
-                onChange={(e) => setSearchOptions(prev => ({
-                  ...prev,
-                  matchThreshold: parseFloat(e.target.value)
-                }))}
-                disabled={loading}
-              />
-            </label>
             <label>
               <span>Max Results: {searchOptions.matchCount}</span>
               <input
@@ -110,7 +94,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Powered by Supabase & Google Gemini</p>
+        <p>:)</p>
       </footer>
     </div>
   )

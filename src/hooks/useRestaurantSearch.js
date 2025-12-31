@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { generateEmbedding } from '../services/embeddingService'
-import { searchRestaurants } from '../services/searchService'
+import { hybridSearchRestaurants } from '../services/searchService'
 
 /**
  * Custom hook for restaurant search functionality
@@ -16,13 +16,11 @@ export function useRestaurantSearch() {
    * Perform a restaurant search
    * @param {string} query - Search query text
    * @param {Object} options - Search options
-   * @param {number} options.matchThreshold - Similarity threshold (0-1)
    * @param {number} options.matchCount - Maximum results to return
    * @returns {Promise<Array>} - Search results
    */
   const performSearch = async (query, options = {}) => {
     const {
-      matchThreshold = 0.7,
       matchCount = 10
     } = options
 
@@ -35,10 +33,10 @@ export function useRestaurantSearch() {
       // Step 1: Generate embedding from search text
       const embedding = await generateEmbedding(query)
 
-      // Step 2: Search database using embedding
-      const searchResults = await searchRestaurants(
+      // Step 2: Search database using hybrid search
+      const searchResults = await hybridSearchRestaurants(
+        query,
         embedding,
-        matchThreshold,
         matchCount
       )
 

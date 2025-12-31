@@ -40,12 +40,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'models/embedding-001',
+        model: 'models/gemini-embedding-001',
         content: {
           parts: [{
             text: text.trim()
           }]
-        }
+        },        taskType: 'SEMANTIC_SIMILARITY',
+        outputDimensionality: 768,
       })
     })
 

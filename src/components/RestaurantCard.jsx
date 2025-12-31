@@ -3,16 +3,12 @@ import { MapPin, Star, ExternalLink } from 'lucide-react'
 export function RestaurantCard({ result }) {
   const {
     restaurant_name,
+    address,
     location,
     title,
-    content,
+    short_review,
     link,
-    overall_score,
-    similarity
   } = result
-
-  // Format similarity as percentage
-  const similarityPercent = (similarity * 100).toFixed(1)
 
   return (
     <div className="restaurant-card">
@@ -20,44 +16,30 @@ export function RestaurantCard({ result }) {
         <h3 className="restaurant-name">
           {restaurant_name || 'Unknown Restaurant'}
         </h3>
-        <div className="similarity-badge">
-          {similarityPercent}% match
-        </div>
       </div>
 
-      {location && (
+      {address && (
+        <div className="location">
+          <MapPin size={16} />
+          <span>{address}</span>
+        </div>
+      )}
+
+      {!address && location && (
         <div className="location">
           <MapPin size={16} />
           <span>{location}</span>
         </div>
       )}
 
-      {overall_score && overall_score > 0 && (
-        <div className="rating">
-          <Star size={16} fill="currentColor" />
-          <span>{overall_score}/10</span>
-        </div>
-      )}
+      <h4 className="review-title"><a href={link} target="_blank">{title}</a></h4>
 
-      <h4 className="review-title">{title}</h4>
-
-      {content && (
+      {short_review && (
         <p className="review-content">
-          {content.length > 300
-            ? `${content.substring(0, 300)}...`
-            : content}
+          {short_review.length > 300
+            ? `${short_review.substring(0, 300)}...`
+            : short_review}
         </p>
-      )}
-
-      {link && (
-        <a
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="read-more-link"
-        >
-          Read full review <ExternalLink size={14} />
-        </a>
       )}
     </div>
   )

@@ -104,6 +104,9 @@ returns table (
   restaurant_name text,
   location text,
   content text,
+  short_review text,
+  address text,
+  link text,
   similarity float
 )
 language sql stable
@@ -114,6 +117,9 @@ as $$
     restaurant_reviews.restaurant_name,
     restaurant_reviews.location,
     restaurant_reviews.content,
+    restaurant_reviews.short_review,
+    restaurant_reviews.address,
+    restaurant_reviews.link,
     1 - (restaurant_reviews.embedding <=> query_embedding) as similarity
   from public.restaurant_reviews
   where 1 - (restaurant_reviews.embedding <=> query_embedding) > match_threshold
@@ -133,6 +139,9 @@ returns table (
   restaurant_name text,
   location text,
   content text,
+  short_review text,
+  address text,
+  link text,
   similarity float
 )
 language sql stable
@@ -143,6 +152,9 @@ as $$
     restaurant_reviews.restaurant_name,
     restaurant_reviews.location,
     restaurant_reviews.content,
+    restaurant_reviews.short_review,
+    restaurant_reviews.address,
+    restaurant_reviews.link,
     1 - (restaurant_reviews.embedding <=> query_embedding) as similarity
   from public.restaurant_reviews
   where
