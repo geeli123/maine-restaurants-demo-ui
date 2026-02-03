@@ -1,13 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Maine Restaurant Search</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maine Restaurant Search</title>
+  <link rel="stylesheet" href="/src/styles/App.css">
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Supabase Client Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Configuration -->
+  <script src="/src/config.js"></script>
+
+  <!-- App Scripts -->
+  <script type="module" src="/src/config/supabase.js"></script>
+  <script type="module" src="/src/services/embeddingService.js"></script>
+  <script type="module" src="/src/services/searchService.js"></script>
+  <script type="module" src="/src/components/components.js"></script>
+  <script type="module" src="/src/app.js"></script>
+</body>
 </html>

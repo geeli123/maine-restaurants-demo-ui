@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent'
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +45,8 @@ serve(async (req) => {
           parts: [{
             text: text.trim()
           }]
-        },        taskType: 'SEMANTIC_SIMILARITY',
+        },
+        taskType: 'SEMANTIC_SIMILARITY',
         outputDimensionality: 768,
       })
     })

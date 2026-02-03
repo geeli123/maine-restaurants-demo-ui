@@ -39,7 +39,7 @@ export async function generateEmbedding(text) {
         `Invalid embedding dimension: expected 768, got ${data.embedding.length}`
       )
     }
-
+    console.log(data.embedding)
     return data.embedding
   } catch (error) {
     // Re-throw with context if not already an Error object
