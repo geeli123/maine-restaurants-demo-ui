@@ -10,7 +10,7 @@ import { supabase } from '../config/supabase'
  */
 export async function searchRestaurants(
   embedding,
-  matchThreshold = 0.7,
+  matchThreshold = 0.5,
   matchCount = 10
 ) {
   // Validate embedding

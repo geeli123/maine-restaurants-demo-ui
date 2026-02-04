@@ -1,6 +1,6 @@
 // Main application logic
 import { generateEmbedding } from './services/embeddingService.js'
-import { hybridSearchRestaurants } from './services/searchService.js'
+import { searchRestaurants, hybridSearchRestaurants } from './services/searchService.js'
 import {
   renderLoadingSpinner,
   renderErrorMessage,
@@ -101,7 +101,7 @@ function renderApp() {
 }
 
 // Update UI based on state
-function render() {
+function renderInputState () {
   // Update search button
   searchButton.disabled = state.loading || !searchInput.value.trim()
   searchButton.textContent = state.loading ? 'Searching...' : 'Search'
@@ -111,7 +111,10 @@ function render() {
 
   // Update clear button visibility
   clearButton.style.display = searchInput.value ? 'block' : 'none'
+}
 
+function render () {
+  renderInputState()
   // Update content area
   if (state.loading) {
     contentArea.innerHTML = renderLoadingSpinner()
@@ -130,7 +133,7 @@ function render() {
 }
 
 // Perform search
-async function performSearch(query) {
+async function performSearch (query) {
   // Reset error state
   state.error = null
   state.loading = true
@@ -142,9 +145,9 @@ async function performSearch(query) {
     const embedding = await generateEmbedding(query)
 
     // Step 2: Search database using hybrid search
-    const searchResults = await hybridSearchRestaurants(
-      query,
+    const searchResults = await searchRestaurants(
       embedding,
+      0.3,
       state.matchCount
     )
 
@@ -154,7 +157,8 @@ async function performSearch(query) {
 
     return searchResults
   } catch (err) {
-    const errorMessage = err.message || 'An unexpected error occurred during search'
+    const errorMessage =
+      err.message || 'An unexpected error occurred during search'
     state.error = errorMessage
     state.results = []
     state.loading = false
@@ -166,7 +170,7 @@ async function performSearch(query) {
 }
 
 // Clear search
-function clearSearch() {
+function clearSearch () {
   searchInput.value = ''
   state.results = []
   state.error = null
@@ -175,7 +179,7 @@ function clearSearch() {
 }
 
 // Event handlers
-function handleSubmit(e) {
+function handleSubmit (e) {
   e.preventDefault()
   const query = searchInput.value.trim()
   if (query) {
@@ -183,18 +187,18 @@ function handleSubmit(e) {
   }
 }
 
-function handleClear() {
+function handleClear () {
   clearSearch()
 }
 
-function handleRetry() {
+function handleRetry () {
   if (state.searchQuery) {
     performSearch(state.searchQuery)
   }
 }
 
-function handleInputChange() {
-  render()
+function handleInputChange () {
+  renderInputState()
 }
 
 function handleMatchCountChange() {
