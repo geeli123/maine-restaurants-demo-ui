@@ -1,6 +1,6 @@
 # Maine Restaurant Search
 
-A React application that enables semantic search for Maine restaurants using AI-powered vector embeddings. Users can search for restaurants using natural language queries, and the app returns relevant results ranked by similarity.
+A Vite application that enables semantic search for Maine restaurants using AI-powered vector embeddings. Users can search for restaurants using natural language queries, and the app returns relevant results ranked by similarity.
 
 ## Features
 
@@ -12,7 +12,7 @@ A React application that enables semantic search for Maine restaurants using AI-
 
 ## Tech Stack
 
-- **Frontend**: React 18 + Vite
+- **Frontend**: Vite
 - **Database**: Supabase (PostgreSQL + pgvector extension)
 - **Embedding API**: Google Gemini API (embedding-001, 768 dimensions)
 - **Backend**: Supabase Edge Functions (serverless)
