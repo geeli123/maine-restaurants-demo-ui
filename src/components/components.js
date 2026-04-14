@@ -34,27 +34,64 @@ export function renderErrorMessage(error, onRetry) {
   `
 }
 
+function renderBestOfBadges(restaurant) {
+  const years = [2025, 2024, 2023, 2022, 2021];
+  const badges = years
+    .filter(year => restaurant[`best_of_${year}`])
+    .map(year => `
+      <span class="badge best-of-badge" title="Best of ${year}" style="display: inline-flex; align-items: center; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; border: 1px solid #ffeeba;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#ffc107" stroke="#ffc107" stroke-width="2" style="margin-right: 4px;">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        Best of ${year}
+      </span>
+    `)
+    .join('');
+  
+  return badges ? `<div class="badges-container" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; margin-bottom: 8px;">${badges}</div>` : '';
+}
+
+// Review Card Subcomponent for Detail View
+export function renderReviewCard(review) {
+  const { title, short_review, link } = review
+  const decodedTitle = decodeHTMLEntities(title)
+
+  return `
+    <div class="review-card">
+      <h4 class="review-title">
+        <a href="${link}" target="_blank">${decodedTitle}</a>
+      </h4>
+      ${short_review ? `
+        <p class="review-content">
+          ${short_review.length > 300 ? `${short_review.substring(0, 300)}...` : short_review}
+        </p>
+      ` : ''}
+    </div>
+  `
+}
+
 // Restaurant Card Component
 export function renderRestaurantCard(result) {
   const {
-    restaurant_name,
+    id,
+    name,
     address,
     location,
-    title,
-    short_review,
-    link,
+    description
   } = result
 
-  const decodedTitle = decodeHTMLEntities(title)
   const displayLocation = address || location || ''
 
+  // Make the entire card clickable
   return `
-    <div class="restaurant-card">
+    <div class="restaurant-card" onclick="window.selectRestaurant('${id}')" style="cursor: pointer;">
       <div class="card-header">
         <h3 class="restaurant-name">
-          ${restaurant_name || 'Unknown Restaurant'}
+          ${name || 'Unknown Restaurant'}
         </h3>
       </div>
+      
+      ${renderBestOfBadges(result)}
 
       ${displayLocation ? `
         <div class="location">
@@ -66,15 +103,64 @@ export function renderRestaurantCard(result) {
         </div>
       ` : ''}
 
-      <h4 class="review-title">
-        <a href="${link}" target="_blank">${decodedTitle}</a>
-      </h4>
-
-      ${short_review ? `
-        <p class="review-content">
-          ${short_review.length > 300 ? `${short_review.substring(0, 300)}...` : short_review}
+      ${description ? `
+        <p class="restaurant-description">
+          ${description.length > 300 ? `${description.substring(0, 300)}...` : description}
         </p>
       ` : ''}
+      <div class="card-action">
+        <button class="view-details-btn">View Reviews</button>
+      </div>
+    </div>
+  `
+}
+
+// Restaurant Details Component
+export function renderRestaurantDetails(restaurant) {
+  const { name, address, location, description, keywords, reviews } = restaurant
+  const displayLocation = address || location || ''
+  const tagList = Array.isArray(keywords) ? keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('') : ''
+
+  return `
+    <div class="restaurant-details">
+      <button class="back-button" onclick="window.backToSearch()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Search Results
+      </button>
+
+      <div class="details-header">
+        <h2>${name || 'Unknown Restaurant'}</h2>
+        ${renderBestOfBadges(restaurant)}
+        ${displayLocation ? `
+          <div class="location">
+             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span>${displayLocation}</span>
+          </div>
+        ` : ''}
+      </div>
+
+      ${tagList ? `<div class="keywords-container">${tagList}</div>` : ''}
+
+      ${description ? `
+        <div class="restaurant-description full">
+          <p>${description}</p>
+        </div>
+      ` : ''}
+
+      <div class="restaurant-reviews-section">
+        <h3>Relevant Reviews (${reviews ? reviews.length : 0})</h3>
+        <div class="reviews-list">
+          ${reviews && reviews.length > 0 
+            ? reviews.map(r => renderReviewCard(r)).join('') 
+            : '<p>No reviews available.</p>'}
+        </div>
+      </div>
     </div>
   `
 }

@@ -5,7 +5,8 @@ import {
   renderLoadingSpinner,
   renderErrorMessage,
   renderSearchResults,
-  renderWelcomeMessage
+  renderWelcomeMessage,
+  renderRestaurantDetails
 } from './components/components.js'
 
 // Application state
@@ -14,7 +15,8 @@ const state = {
   loading: false,
   error: null,
   searchQuery: '',
-  matchCount: 10
+  matchCount: 10,
+  selectedRestaurant: null
 }
 
 // DOM element references (will be set after rendering)
@@ -113,19 +115,28 @@ function render() {
   clearButton.style.display = searchInput.value ? 'block' : 'none'
 
   // Update content area
-  if (state.loading) {
-    contentArea.innerHTML = renderLoadingSpinner()
-  } else if (state.error && !state.loading) {
-    contentArea.innerHTML = renderErrorMessage(state.error, true)
-    // Add event listener to retry button
-    const retryButton = document.getElementById('retry-button')
-    if (retryButton) {
-      retryButton.addEventListener('click', handleRetry)
+  if (state.selectedRestaurant) {
+    searchForm.style.display = 'none'
+    document.querySelector('.search-options').style.display = 'none'
+    contentArea.innerHTML = renderRestaurantDetails(state.selectedRestaurant)
+  } else {
+    searchForm.style.display = 'flex'
+    document.querySelector('.search-options').style.display = 'block'
+    
+    if (state.loading) {
+      contentArea.innerHTML = renderLoadingSpinner()
+    } else if (state.error && !state.loading) {
+      contentArea.innerHTML = renderErrorMessage(state.error, true)
+      // Add event listener to retry button
+      const retryButton = document.getElementById('retry-button')
+      if (retryButton) {
+        retryButton.addEventListener('click', handleRetry)
+      }
+    } else if (!state.loading && !state.error && state.searchQuery) {
+      contentArea.innerHTML = renderSearchResults(state.results, state.searchQuery)
+    } else if (!state.loading && !state.error && !state.searchQuery) {
+      contentArea.innerHTML = renderWelcomeMessage()
     }
-  } else if (!state.loading && !state.error && state.searchQuery) {
-    contentArea.innerHTML = renderSearchResults(state.results, state.searchQuery)
-  } else if (!state.loading && !state.error && !state.searchQuery) {
-    contentArea.innerHTML = renderWelcomeMessage()
   }
 }
 
@@ -204,6 +215,20 @@ function handleMatchCountChange() {
 
 // Initialize app
 function init() {
+  // Expose global functions for component click handlers
+  window.selectRestaurant = (id) => {
+    const restaurant = state.results.find(r => r.id === id)
+    if (restaurant) {
+      state.selectedRestaurant = restaurant
+      render()
+    }
+  }
+  
+  window.backToSearch = () => {
+    state.selectedRestaurant = null
+    render()
+  }
+
   // Render the entire app
   renderApp()
 
