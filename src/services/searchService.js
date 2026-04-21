@@ -29,7 +29,7 @@ export async function searchRestaurants(
 
   try {
     // Call Supabase RPC function for vector similarity search
-    const { data, error } = await supabase.rpc('search_restaurant_reviews', {
+    const { data, error } = await supabase.rpc('search_restaurants', {
       query_embedding: embedding,
       match_threshold: matchThreshold,
       match_count: matchCount
@@ -78,7 +78,7 @@ export async function hybridSearchRestaurants(
 
   try {
     // Call Supabase RPC function for hybrid search
-    const { data, error } = await supabase.rpc('hybrid_search_restaurant_reviews', {
+    const { data, error } = await supabase.rpc('hybrid_search_restaurants', {
       search_query: searchQuery,
       query_embedding: embedding,
       match_count: matchCount
