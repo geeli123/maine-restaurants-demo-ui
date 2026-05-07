@@ -8,6 +8,18 @@ import {
   renderWelcomeMessage,
   renderRestaurantDetails
 } from './components/components.js'
+import badWordsRaw from '../bad_en.txt?raw'
+
+// Pre-compile bad words regexes for performance
+const badWordsRegexes = badWordsRaw
+  .split('\n')
+  .map(w => w.trim())
+  .filter(w => w.length > 0)
+  .map(w => {
+    // Escape regex special characters
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`\\b${escaped}\\b`, 'i')
+  })
 
 // Application state
 const state = {
@@ -147,6 +159,15 @@ async function performSearch(query) {
   state.loading = true
   state.searchQuery = query
   render()
+
+  // Profanity check
+  const isProfane = badWordsRegexes.some(regex => regex.test(query))
+  if (isProfane) {
+    state.results = []
+    state.loading = false
+    render()
+    return []
+  }
 
   try {
     // Step 1: Generate embedding from search text
