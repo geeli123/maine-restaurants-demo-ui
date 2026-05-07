@@ -122,7 +122,7 @@ function render() {
   } else {
     searchForm.style.display = 'flex'
     document.querySelector('.search-options').style.display = 'block'
-    
+
     if (state.loading) {
       contentArea.innerHTML = renderLoadingSpinner()
     } else if (state.error && !state.loading) {
@@ -153,9 +153,10 @@ async function performSearch(query) {
     const embedding = await generateEmbedding(query)
 
     // Step 2: Search database using hybrid search
-    const searchResults = await searchRestaurants(
+    const searchResults = await hybridSearchRestaurants(
+      query,
       embedding,
-      0.3,
+      0.75,
       state.matchCount
     )
 
@@ -205,7 +206,8 @@ function handleRetry() {
 }
 
 function handleInputChange() {
-  render()
+  searchButton.disabled = state.loading || !searchInput.value.trim()
+  clearButton.style.display = searchInput.value ? 'block' : 'none'
 }
 
 function handleMatchCountChange() {
@@ -223,7 +225,7 @@ function init() {
       render()
     }
   }
-  
+
   window.backToSearch = () => {
     state.selectedRestaurant = null
     render()

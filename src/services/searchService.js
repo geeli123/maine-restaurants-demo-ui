@@ -3,14 +3,14 @@ import { supabase } from '../config/supabase'
 /**
  * Search restaurant reviews using vector similarity
  * @param {number[]} embedding - Query embedding vector (768 dimensions)
- * @param {number} matchThreshold - Similarity threshold (0-1), default 0.7
+ * @param {number} matchThreshold - Similarity threshold (0-1)
  * @param {number} matchCount - Maximum number of results to return, default 10
  * @returns {Promise<Array>} - Matching restaurant reviews sorted by relevance
  * @throws {Error} - If database search fails
  */
 export async function searchRestaurants(
   embedding,
-  matchThreshold = 0.5,
+  matchThreshold = 0.75,
   matchCount = 10
 ) {
   // Validate embedding
@@ -61,6 +61,7 @@ export async function searchRestaurants(
 export async function hybridSearchRestaurants(
   searchQuery,
   embedding,
+  matchThreshold = 0.75,
   matchCount = 10
 ) {
   // Validate inputs
@@ -81,6 +82,7 @@ export async function hybridSearchRestaurants(
     const { data, error } = await supabase.rpc('hybrid_search_restaurants', {
       search_query: searchQuery,
       query_embedding: embedding,
+      match_threshold: matchThreshold,
       match_count: matchCount
     })
 

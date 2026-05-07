@@ -77,7 +77,8 @@ export function renderRestaurantCard(result) {
     name,
     address,
     location,
-    description
+    description,
+    similarity
   } = result
 
   const displayLocation = address || location || ''
@@ -85,10 +86,11 @@ export function renderRestaurantCard(result) {
   // Make the entire card clickable
   return `
     <div class="restaurant-card" onclick="window.selectRestaurant('${id}')" style="cursor: pointer;">
-      <div class="card-header">
-        <h3 class="restaurant-name">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
+        <h3 class="restaurant-name" style="margin: 0;">
           ${name || 'Unknown Restaurant'}
         </h3>
+        ${similarity != null ? `<span class="similarity-badge" title="AI Match Score" style="font-size: 0.75rem; background: #f0f9ff; color: #0369a1; padding: 4px 8px; border-radius: 12px; border: 1px solid #bae6fd; white-space: nowrap; font-weight: bold;">${(similarity * 100).toFixed(1)}% Match</span>` : ''}
       </div>
       
       ${renderBestOfBadges(result)}
@@ -117,7 +119,7 @@ export function renderRestaurantCard(result) {
 
 // Restaurant Details Component
 export function renderRestaurantDetails(restaurant) {
-  const { name, address, location, description, keywords, reviews } = restaurant
+  const { name, address, location, description, keywords, reviews, similarity } = restaurant
   const displayLocation = address || location || ''
   const tagList = Array.isArray(keywords) ? keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('') : ''
 
@@ -132,7 +134,10 @@ export function renderRestaurantDetails(restaurant) {
       </button>
 
       <div class="details-header">
-        <h2>${name || 'Unknown Restaurant'}</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <h2 style="margin: 0;">${name || 'Unknown Restaurant'}</h2>
+          ${similarity != null ? `<span class="similarity-badge" title="AI Match Score" style="font-size: 0.85rem; background: #f0f9ff; color: #0369a1; padding: 4px 10px; border-radius: 12px; border: 1px solid #bae6fd; font-weight: bold;">${(similarity * 100).toFixed(1)}% Match</span>` : ''}
+        </div>
         ${renderBestOfBadges(restaurant)}
         ${displayLocation ? `
           <div class="location">

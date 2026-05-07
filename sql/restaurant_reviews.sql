@@ -191,6 +191,7 @@ $$;
 create or replace function public.hybrid_search_restaurants(
   search_query text,
   query_embedding vector(768),
+  match_threshold float default 0.7,
   match_count int default 10
 )
 returns table (
@@ -247,6 +248,8 @@ begin
     r.name ilike '%' || search_query || '%'
     or r.location ilike '%' || search_query || '%'
     or array_to_string(r.keywords, ' ') ilike '%' || search_query || '%'
+    or exists (select 1 from unnest(r.keywords) as kw where search_query ilike '%' || kw || '%')
+    or 1 - (r.embedding <=> query_embedding) > match_threshold
   order by r.embedding <=> query_embedding
   limit match_count;
 end;
