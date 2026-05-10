@@ -32,6 +32,7 @@ const state = {
     cuisine: '',
     foodTruck: '',
     seasonal: '',
+    vibe: '',
     features: []
   }
 }
@@ -88,6 +89,7 @@ function renderApp() {
 }
 
 const CUISINES = ['Seafood', 'Italian', 'American', 'Pub Food', 'Asian', 'Mexican', 'Bakery/Cafe', 'Other', 'Any']
+const VIBES = ['Cozy', 'Romantic', 'Lively', 'Upscale', 'Divey', 'Casual', 'Hipster', 'Does not matter']
 const FEATURES = ['Budget', 'Special Occasion', 'Kid-Friendly', 'Gluten-Free Options', 'Pet-Friendly', 'Vegan or Vegetarian', 'Outdoor or Patio Seating']
 
 function renderWizard() {
@@ -152,7 +154,23 @@ function renderWizard() {
     `
   } else if (state.wizard.step === 3) {
     html += `
-      <h2>Step 3: Any special requirements or vibes? (Select all that apply)</h2>
+      <h2>Step 3: What kind of vibe are you looking for?</h2>
+      <div class="options-grid">
+        ${VIBES.map(v => `
+          <label class="wizard-option ${state.wizard.vibe === v ? 'selected' : ''}">
+            <input type="radio" name="vibe" value="${v}" ${state.wizard.vibe === v ? 'checked' : ''} onchange="window.handleWizardChange('vibe', '${v}')">
+            ${v}
+          </label>
+        `).join('')}
+      </div>
+      <div class="wizard-actions">
+        <button class="wizard-btn back-btn" onclick="window.prevWizardStep()">Back</button>
+        <button class="wizard-btn next-btn" onclick="window.nextWizardStep()" ${!state.wizard.vibe ? 'disabled' : ''}>Next</button>
+      </div>
+    `
+  } else if (state.wizard.step === 4) {
+    html += `
+      <h2>Step 4: Any special requirements? (Select all that apply)</h2>
       <div class="options-grid checkboxes">
         ${FEATURES.map(f => `
           <label class="wizard-option ${state.wizard.features.includes(f) ? 'selected' : ''}">
@@ -189,7 +207,7 @@ window.handleWizardFeatureToggle = (feature) => {
 }
 
 window.nextWizardStep = () => {
-  state.wizard.step = Math.min(3, state.wizard.step + 1)
+  state.wizard.step = Math.min(4, state.wizard.step + 1)
   render()
 }
 
@@ -211,6 +229,9 @@ window.submitWizard = () => {
   }
   if (state.wizard.seasonal === 'Year-round only') {
     parts.push('year-round')
+  }
+  if (state.wizard.vibe && state.wizard.vibe !== 'Does not matter') {
+    parts.push(state.wizard.vibe + ' atmosphere')
   }
   if (state.wizard.features.length > 0) {
     parts.push(state.wizard.features.join(' '))
@@ -261,6 +282,7 @@ window.resetSearch = () => {
     cuisine: '',
     foodTruck: '',
     seasonal: '',
+    vibe: '',
     features: []
   }
   render()
