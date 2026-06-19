@@ -25,7 +25,7 @@ const state = {
   loading: false,
   error: null,
   searchQuery: '', // The compiled string for display
-  matchCount: 10,
+  matchCount: 5,
   selectedRestaurant: null,
   wizard: {
     step: 1,
@@ -60,13 +60,13 @@ function renderApp() {
           <summary>Advanced Options</summary>
           <div class="options-content">
             <label>
-              <span>Max Results: <span id="match-count-display">10</span></span>
+              <span>Max Results: <span id="match-count-display">5</span></span>
               <input
                 type="number"
                 id="match-count"
                 min="1"
                 max="50"
-                value="10"
+                value="5"
               />
             </label>
           </div>
@@ -288,6 +288,17 @@ window.resetSearch = () => {
   render()
 }
 
+window.loadMoreSuggestions = () => {
+  state.matchCount += 5
+  if (matchCountInput && matchCountDisplay) {
+    matchCountInput.value = state.matchCount
+    matchCountDisplay.textContent = state.matchCount
+  }
+  if (state.searchQuery) {
+    performSearch(state.searchQuery)
+  }
+}
+
 // Perform search
 async function performSearch(query) {
   state.error = null
@@ -335,7 +346,7 @@ function handleRetry() {
 }
 
 function handleMatchCountChange() {
-  state.matchCount = parseInt(matchCountInput.value) || 10
+  state.matchCount = parseInt(matchCountInput.value) || 5
   matchCountDisplay.textContent = state.matchCount
 }
 

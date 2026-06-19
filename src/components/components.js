@@ -194,6 +194,9 @@ export function renderSearchResults(results, searchQuery) {
       <div class="results-grid">
         ${resultsHTML}
       </div>
+      <div class="load-more-container" style="text-align: center; margin-top: 2rem;">
+        <button class="wizard-btn search-btn" onclick="window.loadMoreSuggestions()">Click for more suggestions</button>
+      </div>
     </div>
   `
 }
