@@ -23,6 +23,7 @@ const badWordsRegexes = badWordsRaw
 const state = {
   results: [],
   loading: false,
+  loadingMore: false,
   error: null,
   searchQuery: '', // The compiled string for display
   matchCount: 5,
@@ -47,7 +48,7 @@ function renderApp() {
   root.innerHTML = `
     <div class="app">
       <header class="app-header">
-        <h1>Maine Restaurant Search</h1>
+        <h1>Maine Bytes</h1>
         <p class="subtitle">Currently serving Portland Maine</p>
       </header>
 
@@ -89,7 +90,7 @@ function renderApp() {
 }
 
 const CUISINES = ['Seafood', 'Italian', 'American', 'Pub Food', 'Asian', 'Mexican', 'Bakery/Cafe', 'Other', 'Any']
-const VIBES = ['Cozy', 'Romantic', 'Lively', 'Upscale', 'Divey', 'Casual', 'Hipster', 'Does not matter']
+const VIBES = ['Cozy', 'Romantic', 'Lively', 'Upscale', 'Divey', 'Casual', 'Trendy', 'Does not matter']
 const FEATURES = ['Budget', 'Special Occasion', 'Kid-Friendly', 'Gluten-Free Options', 'Pet-Friendly', 'Vegan or Vegetarian', 'Outdoor or Patio Seating']
 
 function renderWizard() {
@@ -98,12 +99,12 @@ function renderWizard() {
     document.getElementById('advanced-options').style.display = 'none'
     return
   }
-  
+
   wizardContainer.style.display = 'block'
   document.getElementById('advanced-options').style.display = 'block'
 
   let html = `<div class="wizard-step">`
-  
+
   if (state.wizard.step === 1) {
     html += `
       <h2>Step 1: What kind of cuisine are you in the mood for?</h2>
@@ -185,7 +186,7 @@ function renderWizard() {
       </div>
     `
   }
-  
+
   html += `</div>`
   wizardContainer.innerHTML = html
 }
@@ -250,19 +251,19 @@ function render() {
   } else if (state.results.length > 0 || state.error || state.loading) {
     wizardContainer.style.display = 'none'
     document.getElementById('advanced-options').style.display = 'none'
-    
+
     let content = `
       <div class="search-actions-bar" style="margin-bottom: 2rem;">
         <button class="wizard-btn back-btn" onclick="window.resetSearch()">Start New Search</button>
       </div>
     `
-    
+
     if (state.loading) {
       content += renderLoadingSpinner()
     } else if (state.error && !state.loading) {
       content += renderErrorMessage(state.error, true)
     } else if (state.results.length > 0) {
-      content += renderSearchResults(state.results, state.searchQuery)
+      content += renderSearchResults(state.results, state.searchQuery, state.loadingMore)
     }
     contentArea.innerHTML = content
   } else {
@@ -295,14 +296,19 @@ window.loadMoreSuggestions = () => {
     matchCountDisplay.textContent = state.matchCount
   }
   if (state.searchQuery) {
-    performSearch(state.searchQuery)
+    performSearch(state.searchQuery, true)
   }
 }
 
 // Perform search
-async function performSearch(query) {
+async function performSearch(query, isLoadMore = false) {
   state.error = null
-  state.loading = true
+  if (isLoadMore) {
+    state.loadingMore = true
+  } else {
+    state.loading = true
+    state.results = []
+  }
   state.searchQuery = query
   render()
 
@@ -311,12 +317,13 @@ async function performSearch(query) {
   if (isProfane) {
     state.results = []
     state.loading = false
+    state.loadingMore = false
     render()
     return []
   }
 
   try {
-    const embedding = await generateEmbedding(query)
+    const embedding = await generateEmbedding(query);
     const searchResults = await hybridSearchRestaurants(
       query,
       embedding,
@@ -324,8 +331,32 @@ async function performSearch(query) {
       state.matchCount
     )
 
-    state.results = searchResults
+    // Add algorithmic jitter using a deterministic hash for stable sorting
+    // so results aren't completely random on every load more
+    const getStableHash = (str) => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return hash;
+    };
+
+    const jitterAmount = 0.02; // adjust this to control the amount of randomness
+    const jitteredResults = [...searchResults].sort((a, b) => {
+      const hashA = getStableHash((a.id || '') + query);
+      const hashB = getStableHash((b.id || '') + query);
+      const randomA = (Math.abs(hashA) % 10000) / 10000 * 2 - 1; // -1 to +1
+      const randomB = (Math.abs(hashB) % 10000) / 10000 * 2 - 1;
+
+      const scoreA = a.similarity + (randomA * jitterAmount);
+      const scoreB = b.similarity + (randomB * jitterAmount);
+      return scoreB - scoreA;
+    });
+
+    state.results = jitteredResults
     state.loading = false
+    state.loadingMore = false
     render()
     return searchResults
   } catch (err) {
@@ -333,6 +364,7 @@ async function performSearch(query) {
     state.error = errorMessage
     state.results = []
     state.loading = false
+    state.loadingMore = false
     console.error('Search failed:', err)
     render()
     return []
@@ -364,7 +396,7 @@ function init() {
     state.selectedRestaurant = null
     render()
   }
-  
+
   window.handleRetry = handleRetry
 
   // Render the entire app

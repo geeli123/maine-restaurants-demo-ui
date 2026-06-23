@@ -1,6 +1,13 @@
 -- Enable the pgvector extension for vector similarity search
 create extension if not exists vector with schema extensions;
 
+-- Create curation status enum
+do $$ begin
+  create type curation_status as enum ('ACTIVE', 'STAGING', 'DISCARDED', 'APPROVED');
+exception
+  when duplicate_object then null;
+end $$;
+
 -- Create the restaurants table (Parent)
 create table if not exists public.restaurants_1 (
   id uuid default gen_random_uuid() primary key,
@@ -29,7 +36,13 @@ create table if not exists public.restaurants_1 (
   best_of_2024 boolean default false,
   best_of_2023 boolean default false,
   best_of_2022 boolean default false,
-  best_of_2021 boolean default false
+  best_of_2021 boolean default false,
+
+  -- Curation fields
+  status curation_status default 'STAGING',
+  is_reviewed boolean default false,
+
+  constraint unique_google_maps_place_id unique (google_maps_place_id)
 );
 
 -- Create the restaurant_reviews table (Child)
@@ -48,7 +61,13 @@ create table if not exists public.restaurant_reviews_1 (
   post_modified_gmt timestamp with time zone,
 
   -- Condensed review
-  short_review text
+  short_review text,
+
+  -- Curation fields
+  status curation_status default 'STAGING',
+  is_reviewed boolean default false,
+
+  constraint unique_restaurant_post unique (restaurant_id, post_id)
 );
 
 -- Enable Row Level Security (RLS)
@@ -125,6 +144,10 @@ create trigger set_restaurant_reviews_1_updated_at
   for each row
   execute function public.handle_updated_at();
 
+-- Drop existing search functions since the return table signature has changed
+drop function if exists public.search_restaurants(vector(768), float, int);
+drop function if exists public.search_restaurants(vector, float, int);
+
 -- Function for semantic search using vector similarity against restaurants_1
 create or replace function public.search_restaurants(
   query_embedding vector(768),
@@ -143,8 +166,11 @@ returns table (
   best_of_2023 boolean,
   best_of_2022 boolean,
   best_of_2021 boolean,
+  status curation_status,
+  is_reviewed boolean,
   similarity float,
-  reviews json
+  reviews json,
+  google_maps_place_id text
 )
 language plpgsql stable
 as $$
@@ -162,6 +188,8 @@ begin
     r.best_of_2023,
     r.best_of_2022,
     r.best_of_2021,
+    r.status,
+    r.is_reviewed,
     1 - (r.embedding <=> query_embedding) as similarity,
     coalesce(
       (
@@ -172,20 +200,27 @@ begin
             'content', rev.content,
             'short_review', rev.short_review,
             'link', rev.link,
-            'post_date_gmt', rev.post_date_gmt
+            'post_date_gmt', rev.post_date_gmt,
+            'status', rev.status,
+            'is_reviewed', rev.is_reviewed
           )
         )
         from public.restaurant_reviews_1 rev
         where rev.restaurant_id = r.id
       ),
       '[]'::json
-    ) as reviews
+    ) as reviews,
+    r.google_maps_place_id
   from public.restaurants_1 r
   where 1 - (r.embedding <=> query_embedding) > match_threshold
   order by r.embedding <=> query_embedding
   limit match_count;
 end;
 $$;
+
+-- Drop existing hybrid search functions since the return table signature has changed
+drop function if exists public.hybrid_search_restaurants(text, vector(768), int);
+drop function if exists public.hybrid_search_restaurants(text, vector, int);
 
 -- Function for hybrid search (combining full-text and vector search) on restaurants_1
 create or replace function public.hybrid_search_restaurants(
@@ -206,8 +241,11 @@ returns table (
   best_of_2023 boolean,
   best_of_2022 boolean,
   best_of_2021 boolean,
+  status curation_status,
+  is_reviewed boolean,
   similarity float,
-  reviews json
+  reviews json,
+  google_maps_place_id text
 )
 language plpgsql stable
 as $$
@@ -225,6 +263,8 @@ begin
     r.best_of_2023,
     r.best_of_2022,
     r.best_of_2021,
+    r.status,
+    r.is_reviewed,
     1 - (r.embedding <=> query_embedding) as similarity,
     coalesce(
       (
@@ -235,14 +275,17 @@ begin
             'content', rev.content,
             'short_review', rev.short_review,
             'link', rev.link,
-            'post_date_gmt', rev.post_date_gmt
+            'post_date_gmt', rev.post_date_gmt,
+            'status', rev.status,
+            'is_reviewed', rev.is_reviewed
           )
         )
         from public.restaurant_reviews_1 rev
         where rev.restaurant_id = r.id
       ),
       '[]'::json
-    ) as reviews
+    ) as reviews,
+    r.google_maps_place_id
   from public.restaurants_1 r
   where
     r.name ilike '%' || search_query || '%'
@@ -254,3 +297,24 @@ begin
   limit match_count;
 end;
 $$;
+
+
+-- -- 1. Create the new ENUM type
+-- CREATE TYPE curation_status AS ENUM ('ACTIVE', 'STAGING', 'DISCARDED', 'APPROVED');
+
+-- -- 2. Add columns to the restaurants table
+-- ALTER TABLE public.restaurants_1
+--   ADD COLUMN status curation_status DEFAULT 'STAGING',
+--   ADD COLUMN is_reviewed boolean DEFAULT false;
+
+-- -- 3. Add columns to the reviews table
+-- ALTER TABLE public.restaurant_reviews_1
+--   ADD COLUMN status curation_status DEFAULT 'STAGING',
+--   ADD COLUMN is_reviewed boolean DEFAULT false;
+
+-- -- 4. Add unique constraints to support the pipeline's upsert logic
+-- ALTER TABLE public.restaurants_1 
+--   ADD CONSTRAINT unique_google_maps_place_id UNIQUE (google_maps_place_id);
+
+-- ALTER TABLE public.restaurant_reviews_1 
+--   ADD CONSTRAINT unique_restaurant_post UNIQUE (restaurant_id, post_id);

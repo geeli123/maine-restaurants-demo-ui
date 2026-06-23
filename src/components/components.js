@@ -34,20 +34,33 @@ export function renderErrorMessage(error, onRetry) {
   `
 }
 
+const BADGE_URLS = {
+  2025: "https://www.pressherald.com/2025/02/27/best-75-places-to-eat-and-drink-in-greater-portland-in-2025/",
+  2024: "https://www.pressherald.com/2024/02/26/best-75-places-to-eat-and-drink-in-greater-portland-in-2024/",
+  2023: "https://www.pressherald.com/2023/01/12/best-75-places-to-eat-and-drink-in-greater-portland/",
+  2022: "https://www.pressherald.com/2022/12/14/dine-out-maine-the-best-of-2022/",
+  2021: "https://www.pressherald.com/2022/01/02/dine-out-maine-the-best-of-2021/"
+};
+
 function renderBestOfBadges(restaurant) {
   const years = [2025, 2024, 2023, 2022, 2021];
   const badges = years
     .filter(year => restaurant[`best_of_${year}`])
-    .map(year => `
-      <span class="badge best-of-badge" title="Best of ${year}" style="display: inline-flex; align-items: center; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; border: 1px solid #ffeeba;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="#ffc107" stroke="#ffc107" stroke-width="2" style="margin-right: 4px;">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-        </svg>
-        Best of ${year}
-      </span>
-    `)
+    .map(year => {
+      const url = BADGE_URLS[year] || "#";
+      return `
+      <a href="${url}" target="_blank" style="text-decoration: none;" onclick="event.stopPropagation();">
+        <span class="badge best-of-badge" title="Best of ${year}" style="display: inline-flex; align-items: center; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; border: 1px solid #ffeeba;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#ffc107" stroke="#ffc107" stroke-width="2" style="margin-right: 4px;">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          Best of ${year}
+        </span>
+      </a>
+      `;
+    })
     .join('');
-  
+
   return badges ? `<div class="badges-container" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; margin-bottom: 8px;">${badges}</div>` : '';
 }
 
@@ -78,7 +91,8 @@ export function renderRestaurantCard(result) {
     address,
     location,
     description,
-    similarity
+    similarity,
+    google_maps_place_id
   } = result
 
   const displayLocation = address || location || ''
@@ -95,15 +109,26 @@ export function renderRestaurantCard(result) {
       
       ${renderBestOfBadges(result)}
 
-      ${displayLocation ? `
+      ${(() => {
+        if (!displayLocation) return '';
+        const queryParams = new URLSearchParams();
+        queryParams.append('api', '1');
+        queryParams.append('query', displayLocation || name || 'restaurant');
+        if (google_maps_place_id) {
+          queryParams.append('query_place_id', google_maps_place_id);
+        }
+        const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`;
+        const locationHtml = `<a href="${mapsUrl}" target="_blank" onclick="event.stopPropagation();" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${displayLocation}</a>`;
+        return `
         <div class="location">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
-          <span>${displayLocation}</span>
+          ${locationHtml}
         </div>
-      ` : ''}
+        `;
+      })()}
 
       ${description ? `
         <p class="restaurant-description">
@@ -111,7 +136,7 @@ export function renderRestaurantCard(result) {
         </p>
       ` : ''}
       <div class="card-action">
-        <button class="view-details-btn">View Reviews</button>
+        <button class="view-details-btn">View Mentions</button>
       </div>
     </div>
   `
@@ -119,7 +144,7 @@ export function renderRestaurantCard(result) {
 
 // Restaurant Details Component
 export function renderRestaurantDetails(restaurant) {
-  const { name, address, location, description, keywords, reviews, similarity } = restaurant
+  const { name, address, location, description, keywords, reviews, similarity, google_maps_place_id } = restaurant
   const displayLocation = address || location || ''
   const tagList = Array.isArray(keywords) ? keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('') : ''
 
@@ -139,15 +164,26 @@ export function renderRestaurantDetails(restaurant) {
           ${similarity != null ? `<span class="similarity-badge" title="AI Match Score" style="font-size: 0.85rem; background: #f0f9ff; color: #0369a1; padding: 4px 10px; border-radius: 12px; border: 1px solid #bae6fd; font-weight: bold;">${(similarity * 100).toFixed(1)}% Match</span>` : ''}
         </div>
         ${renderBestOfBadges(restaurant)}
-        ${displayLocation ? `
+        ${(() => {
+          if (!displayLocation) return '';
+          const queryParams = new URLSearchParams();
+          queryParams.append('api', '1');
+          queryParams.append('query', displayLocation || name || 'restaurant');
+          if (google_maps_place_id) {
+            queryParams.append('query_place_id', google_maps_place_id);
+          }
+          const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`;
+          const locationHtml = `<a href="${mapsUrl}" target="_blank" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${displayLocation}</a>`;
+          return `
           <div class="location">
              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
               <circle cx="12" cy="10" r="3"></circle>
             </svg>
-            <span>${displayLocation}</span>
+            ${locationHtml}
           </div>
-        ` : ''}
+          `;
+        })()}
       </div>
 
       ${tagList ? `<div class="keywords-container">${tagList}</div>` : ''}
@@ -159,11 +195,11 @@ export function renderRestaurantDetails(restaurant) {
       ` : ''}
 
       <div class="restaurant-reviews-section">
-        <h3>Relevant Reviews (${reviews ? reviews.length : 0})</h3>
+        <h3>Read More (${reviews ? reviews.length : 0})</h3>
         <div class="reviews-list">
-          ${reviews && reviews.length > 0 
-            ? reviews.map(r => renderReviewCard(r)).join('') 
-            : '<p>No reviews available.</p>'}
+          ${reviews && reviews.length > 0
+      ? reviews.map(r => renderReviewCard(r)).join('')
+      : '<p>No reviews available.</p>'}
         </div>
       </div>
     </div>
@@ -171,7 +207,7 @@ export function renderRestaurantDetails(restaurant) {
 }
 
 // Search Results Component
-export function renderSearchResults(results, searchQuery) {
+export function renderSearchResults(results, searchQuery, isLoadingMore = false) {
   if (results.length === 0) {
     return `
       <div class="no-results">
@@ -195,7 +231,10 @@ export function renderSearchResults(results, searchQuery) {
         ${resultsHTML}
       </div>
       <div class="load-more-container" style="text-align: center; margin-top: 2rem;">
-        <button class="wizard-btn search-btn" onclick="window.loadMoreSuggestions()">Click for more suggestions</button>
+        ${isLoadingMore
+      ? `<div class="spinner" style="display: inline-block; width: 24px; height: 24px; margin-right: 8px;"></div><span style="vertical-align: super;">Loading more...</span>`
+      : `<button class="wizard-btn search-btn" onclick="window.loadMoreSuggestions()">Click for more suggestions</button>`
+    }
       </div>
     </div>
   `
@@ -205,7 +244,7 @@ export function renderSearchResults(results, searchQuery) {
 export function renderWelcomeMessage() {
   return `
     <div class="welcome-message">
-      <h2>Welcome to Maine Restaurant Search</h2>
+      <h2>Welcome to Maine Bytes</h2>
       <p>Restaurant Reviews that you can trust</p>
       <div class="example-queries">
         <h3>Example searches:</h3>

@@ -40,6 +40,7 @@ export async function searchRestaurants(
       throw new Error(`Database search failed: ${error.message}`)
     }
 
+    console.log(data)
     return data || []
   } catch (error) {
     // Re-throw with context if not already an Error object
@@ -91,6 +92,7 @@ export async function hybridSearchRestaurants(
       throw new Error(`Hybrid search failed: ${error.message}`)
     }
 
+    console.log(data)
     return data || []
   } catch (error) {
     // Re-throw with context if not already an Error object
