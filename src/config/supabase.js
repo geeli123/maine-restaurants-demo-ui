@@ -1,5 +1,4 @@
-// Import Supabase from CDN (available as window.supabase)
-const { createClient } = window.supabase
+import { createClient } from '@supabase/supabase-js'
 
 // Configuration - Replace these with your actual values or load from a config file
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL'

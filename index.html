@@ -1,26 +1,486 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Maine Bytes</title>
-  <link rel="stylesheet" href="/src/styles/App.css">
+  <meta charset="utf-8">
+
+  <title>Maine Maine Match</title>
+  <meta name="description" content="Find your match with a Maine restaurant with Maine Menu Match.">
+  <meta name="author" content="PPH/MST">
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1" name="viewport"/>
+ 
+ 
+  <link rel="stylesheet" href="https://www.pressherald.com/wp-content/themes/mainetoday/assets/css/mainetoday.min.css">
+  
+  <link rel="stylesheet" id="all-css-0" href="https://www.pressherald.com/_static/??-eJxtjUsOwjAMBS9EakWFIhaIszgfFYvEKbGjKrcnGxZUbOfN08C+GWKfWogCXgQCypN8YZky8TTICY4KhjEZh/VHGR+NrJCb2VJbiQXeLdZucmHSUgFFoh7g/0AgUXCp+JdJ5CrWDqI9xW/vke/2uszn22wv9gO/U0d2" type="text/css" media="all">
+  
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  
+   <script src="js/jquery.wait.js"></script>
+  
+
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
+  
+    <link rel="stylesheet" crossorigin="" href="/src/styles/index.css">
+  
+
+     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+ <script src="https://unpkg.com/@lottiefiles/lottie-interactivity@latest/dist/lottie-interactivity.min.js"></script>
+
+
 </head>
+
 <body>
-  <div id="root"></div>
+	
+<div class="mtm-wrapper ">	
+			
+<!-- start WP Copy HTML -->
+	
+<div id="mainemenumatch" class="fullview">
 
-  <!-- Supabase Client Library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+	<div id="gallery-top" class="image-row">
 
-  <!-- Configuration -->
-  <script src="/src/config.js"></script>
+	
+	</div>
+	
+	
+<script>
+	
+document.addEventListener("DOMContentLoaded", () => {
+    // 1. Define your pool of images (Must have at least 8)
+    const imageTop = [
+        "photos/maine-menu-match-01.jpg",
+				"photos/maine-menu-match-02.jpg",
+				"photos/maine-menu-match-03.jpg",
+				"photos/maine-menu-match-04.jpg",
+				"photos/maine-menu-match-05.jpg",
+				"photos/maine-menu-match-06.jpg",
+				"photos/maine-menu-match-07.jpg",
+				"photos/maine-menu-match-08.jpg",
+				"photos/maine-menu-match-09.jpg",
+				"photos/maine-menu-match-10.jpg",
+				"photos/maine-menu-match-11.jpg",
+				"photos/maine-menu-match-12.jpg",
+				"photos/maine-menu-match-13.jpg",
+				"photos/maine-menu-match-14.jpg",
+				"photos/maine-menu-match-15.jpg",
+				"photos/maine-menu-match-16.jpg",
+				"photos/maine-menu-match-17.jpg",
+				"photos/maine-menu-match-18.jpg",
+				"photos/maine-menu-match-19.jpg",
+				"photos/maine-menu-match-20.jpg",
+				"photos/maine-menu-match-21.jpg",
+				"photos/maine-menu-match-22.jpg",
+				"photos/maine-menu-match-23.jpg",
+				"photos/maine-menu-match-24.jpg"
 
-  <!-- App Scripts -->
-  <script type="module" src="/src/config/supabase.js"></script>
-  <script type="module" src="/src/services/embeddingService.js"></script>
-  <script type="module" src="/src/services/searchService.js"></script>
-  <script type="module" src="/src/components/components.js"></script>
-  <script type="module" src="/src/app.js"></script>
+    ];
+    
+    const imageBottom = [
+	    	"photos/maine-menu-match-25.jpg",
+				"photos/maine-menu-match-25.jpg",
+				"photos/maine-menu-match-26.jpg",
+				"photos/maine-menu-match-27.jpg",
+				"photos/maine-menu-match-28.jpg",
+				"photos/maine-menu-match-29.jpg",
+				"photos/maine-menu-match-30.jpg",
+				"photos/maine-menu-match-31.jpg",
+				"photos/maine-menu-match-32.jpg",
+				"photos/maine-menu-match-33.jpg",
+				"photos/maine-menu-match-34.jpg",
+				"photos/maine-menu-match-35.jpg",
+				"photos/maine-menu-match-36.jpg",
+				"photos/maine-menu-match-37.jpg",
+				"photos/maine-menu-match-38.jpg",
+				"photos/maine-menu-match-39.jpg",
+				"photos/maine-menu-match-40.jpg",
+				"photos/maine-menu-match-41.jpg",
+				"photos/maine-menu-match-42.jpg",
+				"photos/maine-menu-match-43.jpg",
+				"photos/maine-menu-match-44.jpg",
+				"photos/maine-menu-match-45.jpg",
+				"photos/maine-menu-match-46.jpg",
+				"photos/maine-menu-match-47.jpg",
+				"photos/maine-menu-match-48.jpg"
+    ];
+
+    // 2. Fisher-Yates shuffle function to randomize the array order
+    function shuffleArrayTop(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+    
+    function shuffleArrayBottom(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // 3. Shuffle your image list
+    const shuffledImagesTop = shuffleArrayTop([...imageTop]);
+    const shuffledImagesBottom = shuffleArrayTop([...imageBottom]);
+
+    // 4. Select the first 8 images from the shuffled array
+    const selectedImagesTop = shuffledImagesTop.slice(0, 8);
+    const selectedImagesBottom = shuffledImagesBottom.slice(0, 8);
+
+    // 5. Append the chosen images to your gallery container
+    const galleryContainerTop = document.getElementById("gallery-top");
+    const galleryContainerBottom = document.getElementById("gallery-bottom");
+    
+    selectedImagesTop.forEach(url => {
+        const imgElement = document.createElement("img");
+        imgElement.onload = () => {
+            imgElement.classList.add("loaded");
+        };
+        imgElement.src = url;
+        imgElement.alt = "Random Gallery Image";
+        galleryContainerTop.appendChild(imgElement);
+    });
+    
+     selectedImagesBottom.forEach(url => {
+        const imgElement = document.createElement("img");
+        imgElement.onload = () => {
+            imgElement.classList.add("loaded");
+        };
+        imgElement.src = url;
+        imgElement.alt = "Random Gallery Image";
+        galleryContainerBottom.appendChild(imgElement);
+    });
+});
+
+		
+</script>
+	
+	
+<div class="blockinner">
+	
+	<div class="block col-2-s">
+		<lottie-player id="logo" src="mainemenumatch.json" style="height: auto" ></lottie-player>
+	</div>
+	
+	
+	<div class="block col-2-l">
+		
+		<div class="intro">			
+			 
+			 <h1>Welcome to Maine Menu Match, our new tool to help readers and fans of Maine&rsquo;s restaurant scene find their next favorite eating spot.</h1>
+
+<p>Want a place that&rsquo;s kid-friendly? A restaurant that has vegetarian options? A unique spot for a special occasion? Answer a few questions from our chatbot and check out the suggestions at the end, based on the parameters you set.</p>
+
+<p>Maine Menu Match isn&rsquo;t replacing the expertise and talent of our writers, who have spent hundreds of hours in research, writing and tasting at restaurants and eateries in Greater Portland and beyond. This tool is simply combing through our published articles to deliver answers.</p>
+
+<p>Maine Menu Match also has limits. Since it&rsquo;s not human and doesn&rsquo;t actually have an opinion on what&rsquo;s good, it sometimes might not have specific answers to your questions, but it will take a guess and offer you some options. Who knows? You might discover some unexpected dining gems you hadn&rsquo;t known about before. Just be sure to check the restaurant&rsquo;s website for the most up-to-date information.</p>
+
+			
+		</div>
+		
+		<div class="search-button"><a href="/step1.html">Start Search</a></div>
+		
+		<div class="disclaimer">
+			<p>Maine Menu Match uses AI to help to process the restaurants we&rsquo;ve written about to match your questions with recommendations from the food team&rsquo;s history of restaurant news and reviews. No information that you enter is used to train or otherwise augment generative AI models.</p>
+
+<p>All restaurant recommendations are written by journalists on the Press Herald&rsquo;s food team.</p>
+</div>
+
+	</div>	
+	
+	</div>
+	
+		<div id="gallery-bottom" class="image-row"></div>
+	
+</div>	
+	
+</div>
+	
+
+   <script>
+  LottieInteractivity.create({
+    player: '#logo',
+    mode: 'chain',
+    actions: [
+      {
+          state: 'loop',
+          transition: 'onComplete',
+         
+      },
+      {
+          state: 'loop',
+          transition: 'onComplete',
+          frames: [11,367]
+      }
+            
+    ]
+  });
+</script>
+
+<style>
+
+
+:root {
+	--button: #7BC0C5;
+	--buttonhover: #4485bc;
+ 	--main: #002752; 
+	--secondary: #185F7B;
+	--highlight: #F5A706;
+	--textdark: #ffffff;
+	--textlight: #000000;
+	--flex-gap: 2rem; /* Variable for gap */
+}
+
+#pos_1_atf_728x90-wrap {
+  display: none;
+}
+
+#primary > .page-header, #primary > .site-main > .entry-header {
+  padding-top: 0;
+}
+
+.entry .entry-content > * {
+  margin: 0;
+}
+
+.fullview {
+  left: 50%;
+  margin-left: -50vw !important;
+  margin-right: -50vw !important;
+  max-width: 100vw !important;
+  position: relative;
+  right: 50%;
+  width: 100vw !important;
+}
+
+.block {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--flex-gap);
+  align-content: center;
+}
+
+.blockinner {
+	display: flex;
+	flex-wrap: wrap;
+  gap: var(--flex-gap);
+  align-content: center;
+  max-width: 1240px;
+  margin: 3em auto;
+  padding: .5em;
+}
+
+.blockinner > .col-all {
+	width: 100%;
+}
+
+.blockinner.block-full {
+	width: 100%;
+	line-height: 0;
+	max-width: 100%;
+	padding: 0;
+}
+
+.block-full img {
+	width: 100%;
+}
+
+.blockinner > .col-2 {
+	--flex-items: 2; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 		var(--flex-gap)));
+}
+
+.blockinner > .col-3 {
+	--flex-items: 3; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+  align-content: flex-start;
+}
+
+.blockinner > .col-4{
+	--flex-items: 4; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+}
+
+.blockinner > .col-5{
+	--flex-items: 5; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+}
+
+.blockinner > .col-6{
+	--flex-items: 6; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+}
+
+.blockinner > .col-2-s {
+	width: calc(40% - (var(--flex-gap)/2))
+} 
+
+.blockinner > .col-2-l {
+	width: calc(60% - (var(--flex-gap)/2))
+} 
+
+.block p:first-of-type  {
+	margin-top: 0;
+}
+
+
+#mainemenumatch {
+	height: 100vh;
+	background: var(--background);
+	display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+#mainemenumatch img {
+	max-width: 100%;
+}
+
+#mainemenumatch .photo-row {
+	display: flex;
+	gap: 5px;
+  padding-bottom: 5px;
+}
+
+#mainemenumatch .photo {
+	line-height: 0;
+}
+
+/* --- Mobile View Styles (Default) --- */
+.image-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.image-row img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover; 
+    
+    /* NEW: Start fully transparent and define the animation speed */
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* NEW: This class triggers the fade-in effect */
+.image-row img.loaded {
+    opacity: 1;
+}
+
+/* Hide images 5 through 8 on mobile devices */
+.image-row img:nth-child(n+5) {
+    display: none;
+}
+
+/* --- Desktop View Styles --- */
+@media (min-width: 768px) {
+    .image-row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: 5px;
+    }
+
+    .image-row img {
+        width: auto; 
+        max-width: 100%; 
+        flex: 1 1 auto; 
+    }
+
+    /* Force reveal images 5 through 8 on desktop screens */
+    .image-row img:nth-child(n+5) {
+        display: block;
+    }
+}
+
+#mainemenumatch h1, #mainemenumatch h2, #mainemenumatch h3, #mainemenumatch h4, #mainemenumatch h5, #mainemenumatch h6 {
+   font-family: var(--header-font);
+  font-weight: 700;
+  font-style: normal;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+
+#mainemenumatch h1 {
+	font-weight: 900;
+	font-size: 2em;
+	margin-bottom: 1rem;
+}
+
+#mainemenumatch h2 {
+	font-size: 2em;
+	margin-bottom: .3em;
+}
+
+#mainemenumatch h3 {
+	font-size: 2em;
+}
+
+#mainemenumatch p {
+	margin-bottom: 1rem;
+}
+
+#mainemenumatch .disclaimer p {
+	font-size: .8rem;
+}
+
+#mainemenumatch .search-button a {
+	color: #fff;
+	text-decoration: none;
+}
+
+#mainemenumatch .textcenter {
+	text-align: center;
+}
+
+@media screen and (max-width: 700px) {
+.blockinner > .col-2 {
+  width: 100%;
+}
+
+.blockinner > .col-3 {
+	width: 100%;
+}
+
+.blockinner > .col-4{
+	--flex-items: 2; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+}
+
+.blockinner > .col-5{
+	--flex-items: 2; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+}
+
+.blockinner > .col-6{
+	--flex-items: 2; /* Variable for number of items */
+  width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * 	var(--flex-gap)));
+}
+
+.blockinner > .col-2-s {
+	width: 100%;} 
+
+.blockinner > .col-2-l {
+	width: 100%;} 
+	
+}
+
+</style>		
+
+<!-- end WP Copy HTML -->
+
+
+			
+	</div>
 </body>
-</html>

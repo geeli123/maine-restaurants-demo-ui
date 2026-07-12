@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="https://maine-restaurants-demo-ui.vercel.app/vite.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maine Menu Match</title>
+  <link rel="stylesheet" crossorigin="" href="/src/styles/index.css">
+  
+     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+ <script src="https://unpkg.com/@lottiefiles/lottie-interactivity@latest/dist/lottie-interactivity.min.js"></script>
+  
+</head>
+<body cz-shortcut-listen="true">
+	
+	      <header class="app-header">
+	      <div class="icon"><lottie-player id="logo" src="mainemenumatchicon.json" style="height: auto" autoplay ></lottie-player></div>
+        <div class="header"><h1>Maine Menu Match</h1>
+        	<p class="subtitle">Currently serving Portland Maine</p>
+        </div>
+      </header>
+      </header>
+	
+  <div id="root">
+    <div class="app">
+  
+
+      <main class="app-main">
+        <!-- Wizard UI -->
+        <div id="wizard-container" class="wizard-container" style="display: none;"><div class="wizard-step">
+      <h2>Step 4: Any special requirements? (Select all that apply)</h2>
+      <div class="options-grid checkboxes">
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Budget" onchange="window.handleWizardFeatureToggle('Budget')">
+            Budget
+          </label>
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Special Occasion" onchange="window.handleWizardFeatureToggle('Special Occasion')">
+            Special Occasion
+          </label>
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Kid-Friendly" onchange="window.handleWizardFeatureToggle('Kid-Friendly')">
+            Kid-Friendly
+          </label>
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Gluten-Free Options" onchange="window.handleWizardFeatureToggle('Gluten-Free Options')">
+            Gluten-Free Options
+          </label>
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Pet-Friendly" onchange="window.handleWizardFeatureToggle('Pet-Friendly')">
+            Pet-Friendly
+          </label>
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Vegan or Vegetarian" onchange="window.handleWizardFeatureToggle('Vegan or Vegetarian')">
+            Vegan or Vegetarian
+          </label>
+        
+          <label class="wizard-option ">
+            <input type="checkbox" value="Outdoor or Patio Seating" onchange="window.handleWizardFeatureToggle('Outdoor or Patio Seating')">
+            Outdoor or Patio Seating
+          </label>
+        
+      </div>
+      <div class="wizard-actions">
+        <button class="wizard-btn back-btn" onclick="window.prevWizardStep()">Back</button>
+        <button class="wizard-btn search-btn" onclick="window.submitWizard()">Search Restaurants</button>
+      </div>
+    </div></div>
+
+        <!-- Advanced Options -->
+        <details class="search-options" id="advanced-options" style="display: none;" open="">
+          <summary>Advanced Options</summary>
+          <div class="options-content">
+            <label>
+              <span>Max Results: <span id="match-count-display">50</span></span>
+              <input type="number" id="match-count" min="1" max="50" value="50">
+            </label>
+          </div>
+        </details>
+
+        <div id="content-area"></div>     </div>
+      </div>
+    </div>
+  </div>
+      </main>
+
+      <footer class="app-footer">
+        <p>:)</p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- App Scripts -->
+  <script type="module" src="/src/result.js"></script>
+
+
+</body></html>
