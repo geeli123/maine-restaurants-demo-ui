@@ -239,22 +239,3 @@ export function renderSearchResults(results, searchQuery, isLoadingMore = false)
     </div>
   `
 }
-
-// Welcome Message Component
-export function renderWelcomeMessage() {
-  return `
-    <div class="welcome-message">
-      <h2>Welcome to Maine Menu Match</h2>
-      <p>Restaurant Reviews that you can trust</p>
-      <div class="example-queries">
-        <h3>Example searches:</h3>
-        <ul>
-          <li>"Best seafood restaurants in Portland"</li>
-          <li>"Cozy Italian places with outdoor seating"</li>
-          <li>"Family-friendly restaurants near the waterfront"</li>
-          <li>"Romantic dinner spots in downtown"</li>
-        </ul>
-      </div>
-    </div>
-  `
-}
