@@ -48,7 +48,7 @@ function renderApp() {
   root.innerHTML = `
     <div class="app">
       <header class="app-header">
-        <h1>Maine Bytes</h1>
+        <h1>Maine Menu Match</h1>
         <p class="subtitle">Currently serving Portland Maine</p>
       </header>
 

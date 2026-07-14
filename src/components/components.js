@@ -110,16 +110,16 @@ export function renderRestaurantCard(result) {
       ${renderBestOfBadges(result)}
 
       ${(() => {
-        if (!displayLocation) return '';
-        const queryParams = new URLSearchParams();
-        queryParams.append('api', '1');
-        queryParams.append('query', displayLocation || name || 'restaurant');
-        if (google_maps_place_id) {
-          queryParams.append('query_place_id', google_maps_place_id);
-        }
-        const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`;
-        const locationHtml = `<a href="${mapsUrl}" target="_blank" onclick="event.stopPropagation();" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${displayLocation}</a>`;
-        return `
+      if (!displayLocation) return '';
+      const queryParams = new URLSearchParams();
+      queryParams.append('api', '1');
+      queryParams.append('query', displayLocation || name || 'restaurant');
+      if (google_maps_place_id) {
+        queryParams.append('query_place_id', google_maps_place_id);
+      }
+      const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`;
+      const locationHtml = `<a href="${mapsUrl}" target="_blank" onclick="event.stopPropagation();" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${displayLocation}</a>`;
+      return `
         <div class="location">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -128,7 +128,7 @@ export function renderRestaurantCard(result) {
           ${locationHtml}
         </div>
         `;
-      })()}
+    })()}
 
       ${description ? `
         <p class="restaurant-description">
@@ -165,16 +165,16 @@ export function renderRestaurantDetails(restaurant) {
         </div>
         ${renderBestOfBadges(restaurant)}
         ${(() => {
-          if (!displayLocation) return '';
-          const queryParams = new URLSearchParams();
-          queryParams.append('api', '1');
-          queryParams.append('query', displayLocation || name || 'restaurant');
-          if (google_maps_place_id) {
-            queryParams.append('query_place_id', google_maps_place_id);
-          }
-          const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`;
-          const locationHtml = `<a href="${mapsUrl}" target="_blank" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${displayLocation}</a>`;
-          return `
+      if (!displayLocation) return '';
+      const queryParams = new URLSearchParams();
+      queryParams.append('api', '1');
+      queryParams.append('query', displayLocation || name || 'restaurant');
+      if (google_maps_place_id) {
+        queryParams.append('query_place_id', google_maps_place_id);
+      }
+      const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`;
+      const locationHtml = `<a href="${mapsUrl}" target="_blank" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">${displayLocation}</a>`;
+      return `
           <div class="location">
              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -183,7 +183,7 @@ export function renderRestaurantDetails(restaurant) {
             ${locationHtml}
           </div>
           `;
-        })()}
+    })()}
       </div>
 
       ${tagList ? `<div class="keywords-container">${tagList}</div>` : ''}
@@ -244,7 +244,7 @@ export function renderSearchResults(results, searchQuery, isLoadingMore = false)
 export function renderWelcomeMessage() {
   return `
     <div class="welcome-message">
-      <h2>Welcome to Maine Bytes</h2>
+      <h2>Welcome to Maine Menu Match</h2>
       <p>Restaurant Reviews that you can trust</p>
       <div class="example-queries">
         <h3>Example searches:</h3>
