@@ -1,5 +1,5 @@
 import { supabase } from './config/supabase'
-import { fetchRestaurants, fetchReviews, updateRestaurant, updateReview } from './services/adminService.js'
+import { fetchRestaurants, fetchReviews, updateRestaurant, updateReview, createRestaurant } from './services/adminService.js'
 
 const PREDEFINED_KEYWORDS = {
   "Cuisine": ["American", "Italian", "Mexican", "Chinese", "Japanese", "Thai", "Indian", "French", "Mediterranean", "Vietnamese", "Spanish", "Greek", "Korean", "Southern", "BBQ", "New American", "Caribbean", "Middle Eastern", "Cajun/Creole", "Ethiopian", "Peruvian", "Cuban", "Brazilian", "German", "Irish", "British", "Tex-Mex", "Soul Food", "Pan-Asian", "Fusion", "Turkish", "Lebanese", "Filipino", "Moroccan", "African", "Latin American"].sort(),
@@ -20,6 +20,7 @@ const state = {
   loading: false,
   error: null,
   editingItem: null,
+  isAddingNew: false,
   allRestaurants: []
 }
 
@@ -99,11 +100,35 @@ window.handleStatusFilter = (e) => {
 
 window.openEditModal = (id) => {
   state.editingItem = state.items.find(item => item.id === id)
+  state.isAddingNew = false
+  render()
+}
+
+window.openAddModal = () => {
+  if (state.activeTab === 'restaurants') {
+    state.editingItem = {
+      name: '',
+      status: 'STAGING',
+      address: '',
+      keywords: [],
+      description: '',
+      best_of_2025: false,
+      best_of_2024: false,
+      best_of_2023: false,
+      best_of_2022: false,
+      best_of_2021: false
+    }
+  } else {
+    // Add review if needed, but not requested currently
+    return
+  }
+  state.isAddingNew = true
   render()
 }
 
 window.closeEditModal = () => {
   state.editingItem = null
+  state.isAddingNew = false
   render()
 }
 
@@ -127,6 +152,7 @@ window.addKeywordUI = () => {
   select.value = ''
 }
 
+
 window.handleSave = async (e) => {
   e.preventDefault()
   const formData = new FormData(e.target)
@@ -140,10 +166,16 @@ window.handleSave = async (e) => {
   }
   
   try {
-    if (state.activeTab === 'restaurants') {
-      await updateRestaurant(state.editingItem.id, updates)
+    if (state.isAddingNew) {
+      if (state.activeTab === 'restaurants') {
+        await createRestaurant(updates)
+      }
     } else {
-      await updateReview(state.editingItem.id, updates)
+      if (state.activeTab === 'restaurants') {
+        await updateRestaurant(state.editingItem.id, updates)
+      } else {
+        await updateReview(state.editingItem.id, updates)
+      }
     }
     window.closeEditModal()
     loadData()
@@ -182,7 +214,7 @@ function renderEditModal() {
     <div class="modal-overlay" onclick="if(event.target === this) window.closeEditModal()">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Edit ${isRest ? 'Restaurant' : 'Review'}</h2>
+          <h2>${state.isAddingNew ? 'Add' : 'Edit'} ${isRest ? 'Restaurant' : 'Review'}</h2>
           <button class="close-btn" onclick="window.closeEditModal()">&times;</button>
         </div>
         <form class="edit-form" onsubmit="window.handleSave(event)">
@@ -228,7 +260,7 @@ function renderEditModal() {
                   </span>
                 `).join('')}
               </div>
-            </label>
+
             <fieldset style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 0.5rem; margin-top: 0.5rem;">
               <legend style="font-weight: 500; font-size: 0.875rem;">Best Of Badges</legend>
               ${[2025, 2024, 2023, 2022, 2021].map(year => `
@@ -288,8 +320,8 @@ function renderDashboard() {
         <button class="tab-btn ${state.activeTab === 'reviews' ? 'active' : ''}" onclick="window.setTab('reviews')">Reviews</button>
       </div>
 
-      <div class="dashboard-controls">
-        <input type="text" placeholder="Search by name or title..." value="${state.searchQuery}" onchange="window.handleSearch(event)" />
+      <div class="dashboard-controls" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <input type="text" placeholder="Search by name or title..." value="${state.searchQuery}" onchange="window.handleSearch(event)" style="flex: 1; min-width: 200px;" />
         <select onchange="window.handleStatusFilter(event)">
           <option value="ALL" ${state.statusFilter === 'ALL' ? 'selected' : ''}>All Statuses</option>
           <option value="STAGING" ${state.statusFilter === 'STAGING' ? 'selected' : ''}>STAGING</option>
@@ -297,6 +329,7 @@ function renderDashboard() {
           <option value="APPROVED" ${state.statusFilter === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
           <option value="DISCARDED" ${state.statusFilter === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
         </select>
+        ${state.activeTab === 'restaurants' ? `<button onclick="window.openAddModal()" style="padding: 0.5rem 1rem; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">+ Add New</button>` : ''}
       </div>
 
       ${state.loading ? '<p>Loading data...</p>' : ''}

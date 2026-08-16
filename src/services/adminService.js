@@ -57,3 +57,13 @@ export async function updateReview(id, updates) {
   if (error) throw error
   return data
 }
+
+export async function createRestaurant(restaurantData) {
+  const { data, error } = await supabase
+    .from('restaurants_1')
+    .insert([restaurantData])
+    .select()
+    
+  if (error) throw error
+  return data
+}
