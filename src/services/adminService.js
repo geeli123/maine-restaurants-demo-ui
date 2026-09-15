@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase'
 
-export async function fetchRestaurants(search = '', status = 'ALL') {
+export async function fetchRestaurants(search = '', status = 'ALL', businessStatus = 'ALL') {
   let query = supabase.from('restaurants_1').select('*')
   
   if (search) {
@@ -9,6 +9,10 @@ export async function fetchRestaurants(search = '', status = 'ALL') {
   
   if (status !== 'ALL') {
     query = query.eq('status', status)
+  }
+
+  if (businessStatus !== 'ALL') {
+    query = query.eq('business_status', businessStatus)
   }
   
   query = query.order('created_at', { ascending: false }).limit(50)

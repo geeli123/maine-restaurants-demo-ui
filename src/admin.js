@@ -32,6 +32,7 @@ const state = {
   activeTab: 'restaurants', // 'restaurants' or 'reviews'
   searchQuery: '',
   statusFilter: 'ALL',
+  businessStatusFilter: 'ALL',
   items: [],
   loading: false,
   error: null,
@@ -73,7 +74,7 @@ async function loadData() {
   
   try {
     if (state.activeTab === 'restaurants') {
-      state.items = await fetchRestaurants(state.searchQuery, state.statusFilter)
+      state.items = await fetchRestaurants(state.searchQuery, state.statusFilter, state.businessStatusFilter)
     } else {
       if (state.allRestaurants.length === 0) {
         const { data } = await supabase.from('restaurants_1').select('id, name').order('name')
@@ -109,6 +110,7 @@ window.setTab = (tab) => {
   state.activeTab = tab
   state.searchQuery = ''
   state.statusFilter = 'ALL'
+  state.businessStatusFilter = 'ALL'
   loadData()
 }
 
@@ -119,6 +121,11 @@ window.handleSearch = (e) => {
 
 window.handleStatusFilter = (e) => {
   state.statusFilter = e.target.value
+  loadData()
+}
+
+window.handleBusinessStatusFilter = (e) => {
+  state.businessStatusFilter = e.target.value
   loadData()
 }
 
@@ -133,6 +140,7 @@ window.openAddModal = () => {
     state.editingItem = {
       name: '',
       status: 'STAGING',
+      business_status: 'OPEN',
       address: '',
       keywords: [],
       description: '',
@@ -329,6 +337,7 @@ window.handleSave = async (e) => {
   const updates = Object.fromEntries(formData.entries())
   
   if (state.activeTab === 'restaurants') {
+    updates.business_status = formData.get('business_status') || 'OPEN'
     updates.keywords = formData.getAll('keywords')
     ;[2025, 2024, 2023, 2022, 2021].forEach(year => {
       updates[`best_of_${year}`] = formData.get(`best_of_${year}`) === 'true'
@@ -395,15 +404,38 @@ function renderEditModal() {
             <input type="text" name="${isRest ? 'name' : 'title'}" value="${(isRest ? item.name : item.title) || ''}" required />
           </label>
           
-          <label>
-            Curation Status
-            <select name="status">
-              <option value="STAGING" ${item.status === 'STAGING' ? 'selected' : ''}>STAGING</option>
-              <option value="ACTIVE" ${item.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
-              <option value="APPROVED" ${item.status === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
-              <option value="DISCARDED" ${item.status === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
-            </select>
-          </label>
+          ${isRest ? `
+            <div class="form-row">
+              <label style="flex: 1;">
+                Curation Status
+                <select name="status">
+                  <option value="STAGING" ${item.status === 'STAGING' ? 'selected' : ''}>STAGING</option>
+                  <option value="ACTIVE" ${item.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+                  <option value="APPROVED" ${item.status === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
+                  <option value="DISCARDED" ${item.status === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
+                </select>
+              </label>
+
+              <label style="flex: 1;">
+                Business Status (Operational)
+                <select name="business_status">
+                  <option value="OPEN" ${(item.business_status || 'OPEN') === 'OPEN' ? 'selected' : ''}>OPEN</option>
+                  <option value="CLOSED_TEMPORARILY" ${item.business_status === 'CLOSED_TEMPORARILY' ? 'selected' : ''}>CLOSED_TEMPORARILY</option>
+                  <option value="CLOSED_PERMANENTLY" ${item.business_status === 'CLOSED_PERMANENTLY' ? 'selected' : ''}>CLOSED_PERMANENTLY</option>
+                </select>
+              </label>
+            </div>
+          ` : `
+            <label>
+              Curation Status
+              <select name="status">
+                <option value="STAGING" ${item.status === 'STAGING' ? 'selected' : ''}>STAGING</option>
+                <option value="ACTIVE" ${item.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+                <option value="APPROVED" ${item.status === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
+                <option value="DISCARDED" ${item.status === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
+              </select>
+            </label>
+          `}
 
           ${isRest ? `
             <label>
@@ -487,7 +519,8 @@ function renderRestaurantReviewsModal() {
           <div>
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
               <h2 style="margin: 0; font-size: 1.5rem; color: #0f172a;">${restaurant.name}</h2>
-              <span class="status-badge status-${restaurant.status}">${restaurant.status}</span>
+              <span class="status-badge status-${restaurant.status}" title="Curation Status">${restaurant.status}</span>
+              <span class="business-status-badge business-status-${restaurant.business_status || 'OPEN'}" title="Business Status">● ${restaurant.business_status || 'OPEN'}</span>
             </div>
             ${restaurant.address ? `<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">📍 ${restaurant.address}</div>` : ''}
             ${restaurant.keywords && restaurant.keywords.length > 0 ? `
@@ -731,12 +764,20 @@ function renderDashboard() {
       <div class="dashboard-controls" style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <input type="text" placeholder="Search by name or title..." value="${state.searchQuery}" onchange="window.handleSearch(event)" style="flex: 1; min-width: 200px;" />
         <select onchange="window.handleStatusFilter(event)">
-          <option value="ALL" ${state.statusFilter === 'ALL' ? 'selected' : ''}>All Statuses</option>
+          <option value="ALL" ${state.statusFilter === 'ALL' ? 'selected' : ''}>All Curation Statuses</option>
           <option value="STAGING" ${state.statusFilter === 'STAGING' ? 'selected' : ''}>STAGING</option>
           <option value="ACTIVE" ${state.statusFilter === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
           <option value="APPROVED" ${state.statusFilter === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
           <option value="DISCARDED" ${state.statusFilter === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
         </select>
+        ${state.activeTab === 'restaurants' ? `
+          <select onchange="window.handleBusinessStatusFilter(event)">
+            <option value="ALL" ${state.businessStatusFilter === 'ALL' ? 'selected' : ''}>All Business Statuses</option>
+            <option value="OPEN" ${state.businessStatusFilter === 'OPEN' ? 'selected' : ''}>OPEN</option>
+            <option value="CLOSED_TEMPORARILY" ${state.businessStatusFilter === 'CLOSED_TEMPORARILY' ? 'selected' : ''}>CLOSED_TEMPORARILY</option>
+            <option value="CLOSED_PERMANENTLY" ${state.businessStatusFilter === 'CLOSED_PERMANENTLY' ? 'selected' : ''}>CLOSED_PERMANENTLY</option>
+          </select>
+        ` : ''}
         <button onclick="window.openAddModal()" style="padding: 0.5rem 1rem; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">+ Add New</button>
       </div>
 
@@ -748,7 +789,12 @@ function renderDashboard() {
           <thead>
             <tr>
               <th>Name / Title</th>
-              <th>Status</th>
+              ${state.activeTab === 'restaurants' ? `
+                <th>Curation</th>
+                <th>Business Status</th>
+              ` : `
+                <th>Status</th>
+              `}
               <th>Date Added</th>
               <th>Actions</th>
             </tr>
@@ -766,6 +812,7 @@ function renderDashboard() {
                     </div>
                   </td>
                   <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+                  <td><span class="business-status-badge business-status-${item.business_status || 'OPEN'}">● ${item.business_status || 'OPEN'}</span></td>
                   <td style="color: #64748b;">${new Date(item.created_at).toLocaleDateString()}</td>
                   <td>
                     <div class="actions-cell" onclick="event.stopPropagation()">
@@ -792,7 +839,7 @@ function renderDashboard() {
                 </tr>
               `}
             `).join('')}
-            ${state.items.length === 0 && !state.loading ? '<tr><td colspan="4" style="text-align: center; color: #64748b;">No items found.</td></tr>' : ''}
+            ${state.items.length === 0 && !state.loading ? '<tr><td colspan="5" style="text-align: center; color: #64748b;">No items found.</td></tr>' : ''}
           </tbody>
         </table>
       </div>

@@ -38,8 +38,9 @@ create table if not exists public.restaurants_1 (
   best_of_2022 boolean default false,
   best_of_2021 boolean default false,
 
-  -- Curation fields
+  -- Curation and status fields
   status curation_status default 'STAGING',
+  business_status text default 'OPEN',
   is_reviewed boolean default false,
 
   constraint unique_google_maps_place_id unique (google_maps_place_id)
@@ -146,6 +147,7 @@ create trigger set_restaurant_reviews_1_updated_at
 
 -- Drop existing search functions since the return table signature has changed
 drop function if exists public.search_restaurants(vector(768), float, int);
+drop function if exists public.search_restaurants(vector(768), float, int);
 drop function if exists public.search_restaurants(vector, float, int);
 
 -- Function for semantic search using vector similarity against restaurants_1
@@ -170,7 +172,8 @@ returns table (
   is_reviewed boolean,
   similarity float,
   reviews json,
-  google_maps_place_id text
+  google_maps_place_id text,
+  business_status text
 )
 language plpgsql stable
 as $$
@@ -210,15 +213,19 @@ begin
       ),
       '[]'::json
     ) as reviews,
-    r.google_maps_place_id
+    r.google_maps_place_id,
+    r.business_status
   from public.restaurants_1 r
   where 1 - (r.embedding <=> query_embedding) > match_threshold
+    and coalesce(r.business_status, 'OPEN') = 'OPEN'
   order by r.embedding <=> query_embedding
   limit match_count;
 end;
 $$;
 
 -- Drop existing hybrid search functions since the return table signature has changed
+drop function if exists public.hybrid_search_restaurants(text, vector(768), float, int);
+drop function if exists public.hybrid_search_restaurants(text, vector, float, int);
 drop function if exists public.hybrid_search_restaurants(text, vector(768), int);
 drop function if exists public.hybrid_search_restaurants(text, vector, int);
 
@@ -245,7 +252,8 @@ returns table (
   is_reviewed boolean,
   similarity float,
   reviews json,
-  google_maps_place_id text
+  google_maps_place_id text,
+  business_status text
 )
 language plpgsql stable
 as $$
@@ -285,14 +293,18 @@ begin
       ),
       '[]'::json
     ) as reviews,
-    r.google_maps_place_id
+    r.google_maps_place_id,
+    r.business_status
   from public.restaurants_1 r
   where
-    r.name ilike '%' || search_query || '%'
-    or r.location ilike '%' || search_query || '%'
-    or array_to_string(r.keywords, ' ') ilike '%' || search_query || '%'
-    or exists (select 1 from unnest(r.keywords) as kw where search_query ilike '%' || kw || '%')
-    or 1 - (r.embedding <=> query_embedding) > match_threshold
+    (
+      r.name ilike '%' || search_query || '%'
+      or r.location ilike '%' || search_query || '%'
+      or array_to_string(r.keywords, ' ') ilike '%' || search_query || '%'
+      or exists (select 1 from unnest(r.keywords) as kw where search_query ilike '%' || kw || '%')
+      or 1 - (r.embedding <=> query_embedding) > match_threshold
+    )
+    and coalesce(r.business_status, 'OPEN') = 'OPEN'
   order by r.embedding <=> query_embedding
   limit match_count;
 end;

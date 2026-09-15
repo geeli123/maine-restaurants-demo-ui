@@ -40,8 +40,13 @@ export async function searchRestaurants(
       throw new Error(`Database search failed: ${error.message}`)
     }
 
-    console.log(data)
-    return data || []
+    const results = (data || []).filter(item => {
+      if (item.business_status != null) {
+        return String(item.business_status).trim().toUpperCase() === 'OPEN'
+      }
+      return true
+    })
+    return results
   } catch (error) {
     // Re-throw with context if not already an Error object
     if (error instanceof Error) {
@@ -92,8 +97,13 @@ export async function hybridSearchRestaurants(
       throw new Error(`Hybrid search failed: ${error.message}`)
     }
 
-    console.log(data)
-    return data || []
+    const results = (data || []).filter(item => {
+      if (item.business_status != null) {
+        return String(item.business_status).trim().toUpperCase() === 'OPEN'
+      }
+      return true
+    })
+    return results
   } catch (error) {
     // Re-throw with context if not already an Error object
     if (error instanceof Error) {
