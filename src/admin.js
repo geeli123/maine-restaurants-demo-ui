@@ -1,5 +1,21 @@
 import { supabase } from './config/supabase'
-import { fetchRestaurants, fetchReviews, updateRestaurant, updateReview, createRestaurant } from './services/adminService.js'
+import {
+  fetchRestaurants,
+  fetchReviews,
+  updateRestaurant,
+  updateReview,
+  createRestaurant,
+  fetchReviewsForRestaurant,
+  createReview,
+  deleteReview
+} from './services/adminService.js'
+
+function decodeHTMLEntities(text) {
+  if (!text) return text
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  return textarea.value
+}
 
 const PREDEFINED_KEYWORDS = {
   "Cuisine": ["American", "Italian", "Mexican", "Chinese", "Japanese", "Thai", "Indian", "French", "Mediterranean", "Vietnamese", "Spanish", "Greek", "Korean", "Southern", "BBQ", "New American", "Caribbean", "Middle Eastern", "Cajun/Creole", "Ethiopian", "Peruvian", "Cuban", "Brazilian", "German", "Irish", "British", "Tex-Mex", "Soul Food", "Pan-Asian", "Fusion", "Turkish", "Lebanese", "Filipino", "Moroccan", "African", "Latin American"].sort(),
@@ -21,7 +37,15 @@ const state = {
   error: null,
   editingItem: null,
   isAddingNew: false,
-  allRestaurants: []
+  allRestaurants: [],
+  // Restaurant reviews management
+  selectedRestaurant: null,
+  restaurantReviews: [],
+  loadingReviews: false,
+  reviewsError: null,
+  isAddingReview: false,
+  editingReviewInModal: null,
+  reviewActionMessage: null
 }
 
 const root = document.getElementById('root')
@@ -119,8 +143,13 @@ window.openAddModal = () => {
       best_of_2021: false
     }
   } else {
-    // Add review if needed, but not requested currently
-    return
+    state.editingItem = {
+      title: '',
+      restaurant_id: state.allRestaurants[0]?.id || '',
+      status: 'STAGING',
+      short_review: '',
+      link: ''
+    }
   }
   state.isAddingNew = true
   render()
@@ -130,6 +159,148 @@ window.closeEditModal = () => {
   state.editingItem = null
   state.isAddingNew = false
   render()
+}
+
+// Restaurant Reviews Modal Handlers
+window.openRestaurantReviewsModal = async (restaurantId) => {
+  let restaurant = state.items.find(item => item.id === restaurantId)
+  if (!restaurant) {
+    restaurant = state.allRestaurants.find(item => item.id === restaurantId)
+  }
+  if (!restaurant) {
+    try {
+      const { data } = await supabase.from('restaurants_1').select('*').eq('id', restaurantId).single()
+      restaurant = data
+    } catch (err) {
+      console.error('Error fetching restaurant details', err)
+    }
+  }
+  if (!restaurant) return
+
+  state.selectedRestaurant = restaurant
+  state.restaurantReviews = []
+  state.loadingReviews = true
+  state.reviewsError = null
+  state.isAddingReview = false
+  state.editingReviewInModal = null
+  state.reviewActionMessage = null
+  render()
+
+  try {
+    state.restaurantReviews = await fetchReviewsForRestaurant(restaurantId)
+  } catch (err) {
+    state.reviewsError = err.message
+  } finally {
+    state.loadingReviews = false
+    render()
+  }
+}
+
+window.closeRestaurantReviewsModal = () => {
+  state.selectedRestaurant = null
+  state.restaurantReviews = []
+  state.loadingReviews = false
+  state.reviewsError = null
+  state.isAddingReview = false
+  state.editingReviewInModal = null
+  state.reviewActionMessage = null
+  render()
+}
+
+window.toggleAddReviewForm = (forceVal) => {
+  state.isAddingReview = typeof forceVal === 'boolean' ? forceVal : !state.isAddingReview
+  state.editingReviewInModal = null
+  state.reviewActionMessage = null
+  render()
+}
+
+window.handleCreateReview = async (e) => {
+  e.preventDefault()
+  if (!state.selectedRestaurant) return
+
+  const formData = new FormData(e.target)
+  const title = formData.get('title')?.trim()
+  if (!title) {
+    alert('Please enter a review title.')
+    return
+  }
+
+  const reviewPayload = {
+    restaurant_id: state.selectedRestaurant.id,
+    title: title,
+    status: formData.get('status') || 'STAGING',
+    short_review: formData.get('short_review')?.trim() || null,
+    content: formData.get('content')?.trim() || null,
+    link: formData.get('link')?.trim() || null,
+    is_reviewed: formData.get('is_reviewed') === 'true'
+  }
+
+  try {
+    await createReview(reviewPayload)
+    state.isAddingReview = false
+    state.reviewActionMessage = { type: 'success', text: 'Review created successfully!' }
+    state.restaurantReviews = await fetchReviewsForRestaurant(state.selectedRestaurant.id)
+    render()
+  } catch (err) {
+    alert('Failed to create review: ' + err.message)
+  }
+}
+
+window.handleEditReviewInModal = (reviewId) => {
+  const review = state.restaurantReviews.find(r => r.id === reviewId)
+  if (!review) return
+  state.editingReviewInModal = review
+  state.isAddingReview = false
+  state.reviewActionMessage = null
+  render()
+}
+
+window.handleCancelEditReviewInModal = () => {
+  state.editingReviewInModal = null
+  render()
+}
+
+window.handleUpdateReviewInModal = async (e) => {
+  e.preventDefault()
+  if (!state.editingReviewInModal || !state.selectedRestaurant) return
+
+  const formData = new FormData(e.target)
+  const title = formData.get('title')?.trim()
+  if (!title) {
+    alert('Please enter a review title.')
+    return
+  }
+
+  const updates = {
+    title: title,
+    status: formData.get('status') || 'STAGING',
+    short_review: formData.get('short_review')?.trim() || null,
+    content: formData.get('content')?.trim() || null,
+    link: formData.get('link')?.trim() || null,
+    is_reviewed: formData.get('is_reviewed') === 'true'
+  }
+
+  try {
+    await updateReview(state.editingReviewInModal.id, updates)
+    state.editingReviewInModal = null
+    state.reviewActionMessage = { type: 'success', text: 'Review updated successfully!' }
+    state.restaurantReviews = await fetchReviewsForRestaurant(state.selectedRestaurant.id)
+    render()
+  } catch (err) {
+    alert('Failed to update review: ' + err.message)
+  }
+}
+
+window.handleDeleteReviewInModal = async (reviewId) => {
+  if (!confirm('Are you sure you want to delete this review?')) return
+  try {
+    await deleteReview(reviewId)
+    state.reviewActionMessage = { type: 'success', text: 'Review deleted successfully!' }
+    state.restaurantReviews = await fetchReviewsForRestaurant(state.selectedRestaurant.id)
+    render()
+  } catch (err) {
+    alert('Failed to delete review: ' + err.message)
+  }
 }
 
 window.addKeywordUI = () => {
@@ -152,7 +323,6 @@ window.addKeywordUI = () => {
   select.value = ''
 }
 
-
 window.handleSave = async (e) => {
   e.preventDefault()
   const formData = new FormData(e.target)
@@ -160,7 +330,7 @@ window.handleSave = async (e) => {
   
   if (state.activeTab === 'restaurants') {
     updates.keywords = formData.getAll('keywords')
-    [2025, 2024, 2023, 2022, 2021].forEach(year => {
+    ;[2025, 2024, 2023, 2022, 2021].forEach(year => {
       updates[`best_of_${year}`] = formData.get(`best_of_${year}`) === 'true'
     })
   }
@@ -169,6 +339,8 @@ window.handleSave = async (e) => {
     if (state.isAddingNew) {
       if (state.activeTab === 'restaurants') {
         await createRestaurant(updates)
+      } else {
+        await createReview(updates)
       }
     } else {
       if (state.activeTab === 'restaurants') {
@@ -304,6 +476,242 @@ function renderEditModal() {
   `
 }
 
+function renderRestaurantReviewsModal() {
+  if (!state.selectedRestaurant) return ''
+  const restaurant = state.selectedRestaurant
+
+  return `
+    <div class="modal-overlay" onclick="if(event.target === this) window.closeRestaurantReviewsModal()">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <h2 style="margin: 0; font-size: 1.5rem; color: #0f172a;">${restaurant.name}</h2>
+              <span class="status-badge status-${restaurant.status}">${restaurant.status}</span>
+            </div>
+            ${restaurant.address ? `<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">📍 ${restaurant.address}</div>` : ''}
+            ${restaurant.keywords && restaurant.keywords.length > 0 ? `
+              <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                ${restaurant.keywords.slice(0, 5).map(kw => `
+                  <span class="keyword-badge" style="font-size: 0.75rem; padding: 0.15rem 0.45rem;">${kw}</span>
+                `).join('')}
+                ${restaurant.keywords.length > 5 ? `<span style="font-size: 0.75rem; color: #64748b; align-self: center;">+${restaurant.keywords.length - 5} more</span>` : ''}
+              </div>
+            ` : ''}
+          </div>
+          <button class="close-btn" onclick="window.closeRestaurantReviewsModal()" title="Close">&times;</button>
+        </div>
+
+        <div class="reviews-management-bar">
+          <div class="reviews-count-tag">
+            <strong>${state.restaurantReviews.length}</strong> ${state.restaurantReviews.length === 1 ? 'Review' : 'Reviews'}
+          </div>
+          <button 
+            type="button" 
+            class="add-review-toggle-btn ${state.isAddingReview ? 'is-active' : ''}"
+            onclick="window.toggleAddReviewForm()"
+          >
+            ${state.isAddingReview ? '✕ Cancel' : '+ Add New Review'}
+          </button>
+        </div>
+
+        ${state.reviewActionMessage ? `
+          <div class="alert-banner alert-${state.reviewActionMessage.type}">
+            <span>${state.reviewActionMessage.text}</span>
+            <button type="button" class="alert-close-btn" onclick="state.reviewActionMessage = null; render()">&times;</button>
+          </div>
+        ` : ''}
+
+        ${state.isAddingReview ? `
+          <div class="review-form-card">
+            <div class="review-form-header">
+              <h3>Create Review for "${restaurant.name}"</h3>
+            </div>
+            <form onsubmit="window.handleCreateReview(event)" class="review-admin-form">
+              <div class="form-row">
+                <label style="flex: 2;">
+                  Review Title <span style="color: #ef4444;">*</span>
+                  <input type="text" name="title" placeholder="e.g., Stellar Seafood by the Harbor" required />
+                </label>
+                <label style="flex: 1;">
+                  Status
+                  <select name="status">
+                    <option value="ACTIVE" selected>ACTIVE</option>
+                    <option value="STAGING">STAGING</option>
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="DISCARDED">DISCARDED</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                Short Review / Highlight Summary
+                <textarea name="short_review" placeholder="A concise summary or excerpt from the critic/user review..."></textarea>
+              </label>
+
+              <label>
+                Full Content / Article Body (Optional)
+                <textarea name="content" placeholder="Full review body, notes, or article content..."></textarea>
+              </label>
+
+              <div class="form-row" style="align-items: center;">
+                <label style="flex: 2;">
+                  Source / Article URL (Optional)
+                  <input type="url" name="link" placeholder="https://www.pressherald.com/..." />
+                </label>
+                <label style="flex: 1; margin-top: 1rem;">
+                  <span style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer;">
+                    <input type="checkbox" name="is_reviewed" value="true" checked />
+                    Mark as Curated
+                  </span>
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="window.toggleAddReviewForm(false)">Cancel</button>
+                <button type="submit" class="save-btn">+ Create Review</button>
+              </div>
+            </form>
+          </div>
+        ` : ''}
+
+        ${state.editingReviewInModal ? `
+          <div class="review-form-card edit-mode">
+            <div class="review-form-header">
+              <h3>Edit Review</h3>
+              <button type="button" class="close-btn" style="font-size: 1.25rem;" onclick="window.handleCancelEditReviewInModal()">&times;</button>
+            </div>
+            <form onsubmit="window.handleUpdateReviewInModal(event)" class="review-admin-form">
+              <div class="form-row">
+                <label style="flex: 2;">
+                  Review Title <span style="color: #ef4444;">*</span>
+                  <input type="text" name="title" value="${decodeHTMLEntities(state.editingReviewInModal.title || '')}" required />
+                </label>
+                <label style="flex: 1;">
+                  Status
+                  <select name="status">
+                    <option value="STAGING" ${state.editingReviewInModal.status === 'STAGING' ? 'selected' : ''}>STAGING</option>
+                    <option value="ACTIVE" ${state.editingReviewInModal.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+                    <option value="APPROVED" ${state.editingReviewInModal.status === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
+                    <option value="DISCARDED" ${state.editingReviewInModal.status === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                Short Review / Summary
+                <textarea name="short_review">${state.editingReviewInModal.short_review || ''}</textarea>
+              </label>
+
+              <label>
+                Full Content / Article Body (Optional)
+                <textarea name="content">${state.editingReviewInModal.content || ''}</textarea>
+              </label>
+
+              <div class="form-row" style="align-items: center;">
+                <label style="flex: 2;">
+                  Source / Article URL
+                  <input type="url" name="link" value="${state.editingReviewInModal.link || ''}" />
+                </label>
+                <label style="flex: 1; margin-top: 1rem;">
+                  <span style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer;">
+                    <input type="checkbox" name="is_reviewed" value="true" ${state.editingReviewInModal.is_reviewed ? 'checked' : ''} />
+                    Mark as Curated
+                  </span>
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="cancel-btn" onclick="window.handleCancelEditReviewInModal()">Cancel</button>
+                <button type="submit" class="save-btn">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        ` : ''}
+
+        <div class="reviews-list-container">
+          ${state.loadingReviews ? `
+            <div style="text-align: center; padding: 2.5rem; color: #64748b;">
+              <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid #cbd5e1; border-top-color: #0284c7; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 0.5rem;"></div>
+              <p style="margin: 0;">Loading reviews for ${restaurant.name}...</p>
+            </div>
+          ` : state.reviewsError ? `
+            <div style="color: #ef4444; padding: 1rem; background: #fee2e2; border-radius: 6px; border: 1px solid #fecaca;">
+              <strong>Error loading reviews:</strong> ${state.reviewsError}
+            </div>
+          ` : state.restaurantReviews.length === 0 ? `
+            <div class="empty-reviews-state">
+              <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📝</div>
+              <h4 style="margin: 0 0 0.5rem 0; color: #1e293b;">No reviews found for this restaurant</h4>
+              <p style="color: #64748b; font-size: 0.9rem; margin: 0 0 1rem 0;">
+                Click "<strong>+ Add New Review</strong>" above to write or attach a review.
+              </p>
+              <button 
+                type="button" 
+                class="save-btn" 
+                onclick="window.toggleAddReviewForm(true)"
+                style="font-size: 0.875rem;"
+              >
+                + Add First Review
+              </button>
+            </div>
+          ` : `
+            <div class="reviews-grid">
+              ${state.restaurantReviews.map(review => `
+                <div class="admin-review-card">
+                  <div class="admin-review-card-header">
+                    <div style="flex: 1; min-width: 0;">
+                      <h4 class="admin-review-title">
+                        ${review.link ? `
+                          <a href="${review.link}" target="_blank" rel="noopener noreferrer" title="Open source link">
+                            ${decodeHTMLEntities(review.title)} <span style="font-size: 0.8rem;">↗</span>
+                          </a>
+                        ` : `
+                          <span>${decodeHTMLEntities(review.title)}</span>
+                        `}
+                      </h4>
+                      <div class="admin-review-meta">
+                        <span class="status-badge status-${review.status}">${review.status}</span>
+                        ${review.created_at ? `<span>Added ${new Date(review.created_at).toLocaleDateString()}</span>` : ''}
+                        ${review.is_reviewed ? `<span style="color: #166534; background: #dcfce7; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 500;">Curated</span>` : ''}
+                      </div>
+                    </div>
+                    <div class="admin-review-actions">
+                      <button type="button" class="action-btn edit-btn" onclick="window.handleEditReviewInModal('${review.id}')" title="Edit this review">
+                        Edit
+                      </button>
+                      <button type="button" class="action-btn delete-btn" onclick="window.handleDeleteReviewInModal('${review.id}')" title="Delete this review">
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  ${review.short_review ? `
+                    <div class="admin-review-snippet">
+                      ${review.short_review}
+                    </div>
+                  ` : ''}
+
+                  ${review.content ? `
+                    <details class="admin-review-full-content" style="margin-top: 0.75rem;">
+                      <summary style="cursor: pointer; color: #0284c7; font-size: 0.85rem; font-weight: 500;">
+                        View Full Article Content
+                      </summary>
+                      <div style="margin-top: 0.5rem; font-size: 0.875rem; line-height: 1.6; color: #475569; white-space: pre-wrap; background: #f8fafc; padding: 0.75rem; border-radius: 4px; border: 1px solid #e2e8f0;">
+                        ${review.content}
+                      </div>
+                    </details>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `
+}
+
 function renderDashboard() {
   return `
     <div class="admin-app">
@@ -329,7 +737,7 @@ function renderDashboard() {
           <option value="APPROVED" ${state.statusFilter === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
           <option value="DISCARDED" ${state.statusFilter === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
         </select>
-        ${state.activeTab === 'restaurants' ? `<button onclick="window.openAddModal()" style="padding: 0.5rem 1rem; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">+ Add New</button>` : ''}
+        <button onclick="window.openAddModal()" style="padding: 0.5rem 1rem; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">+ Add New</button>
       </div>
 
       ${state.loading ? '<p>Loading data...</p>' : ''}
@@ -347,14 +755,42 @@ function renderDashboard() {
           </thead>
           <tbody>
             ${state.items.map(item => `
-              <tr>
-                <td style="font-weight: 500;">${state.activeTab === 'restaurants' ? item.name : item.title}</td>
-                <td><span class="status-badge status-${item.status}">${item.status}</span></td>
-                <td style="color: #64748b;">${new Date(item.created_at).toLocaleDateString()}</td>
-                <td>
-                  <button class="edit-btn" onclick="window.openEditModal('${item.id}')">Edit</button>
-                </td>
-              </tr>
+              ${state.activeTab === 'restaurants' ? `
+                <tr class="clickable-restaurant-row" onclick="window.openRestaurantReviewsModal('${item.id}')">
+                  <td style="font-weight: 500;">
+                    <div class="restaurant-name-cell">
+                      <button type="button" class="restaurant-name-link" onclick="event.stopPropagation(); window.openRestaurantReviewsModal('${item.id}')" title="Click to view reviews & add reviews">
+                        ${item.name}
+                      </button>
+                      ${item.address ? `<div class="restaurant-subtext">📍 ${item.address}</div>` : ''}
+                    </div>
+                  </td>
+                  <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+                  <td style="color: #64748b;">${new Date(item.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <div class="actions-cell" onclick="event.stopPropagation()">
+                      <button type="button" class="action-btn reviews-action-btn" onclick="window.openRestaurantReviewsModal('${item.id}')" title="View & Add Reviews">
+                        Reviews
+                      </button>
+                      <button type="button" class="action-btn edit-btn" onclick="window.openEditModal('${item.id}')" title="Edit Restaurant Details">
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ` : `
+                <tr>
+                  <td style="font-weight: 500;">
+                    <div>${decodeHTMLEntities(item.title)}</div>
+                    ${item.restaurants_1?.name ? `<div class="restaurant-subtext">Restaurant: <strong>${item.restaurants_1.name}</strong></div>` : ''}
+                  </td>
+                  <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+                  <td style="color: #64748b;">${new Date(item.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <button type="button" class="action-btn edit-btn" onclick="window.openEditModal('${item.id}')">Edit</button>
+                  </td>
+                </tr>
+              `}
             `).join('')}
             ${state.items.length === 0 && !state.loading ? '<tr><td colspan="4" style="text-align: center; color: #64748b;">No items found.</td></tr>' : ''}
           </tbody>
@@ -362,6 +798,7 @@ function renderDashboard() {
       </div>
 
       ${renderEditModal()}
+      ${renderRestaurantReviewsModal()}
     </div>
   `
 }

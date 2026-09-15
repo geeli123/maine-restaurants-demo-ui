@@ -67,3 +67,34 @@ export async function createRestaurant(restaurantData) {
   if (error) throw error
   return data
 }
+
+export async function fetchReviewsForRestaurant(restaurantId) {
+  const { data, error } = await supabase
+    .from('restaurant_reviews_1')
+    .select('*')
+    .eq('restaurant_id', restaurantId)
+    .order('created_at', { ascending: false })
+    
+  if (error) throw error
+  return data || []
+}
+
+export async function createReview(reviewData) {
+  const { data, error } = await supabase
+    .from('restaurant_reviews_1')
+    .insert([reviewData])
+    .select()
+    
+  if (error) throw error
+  return data
+}
+
+export async function deleteReview(id) {
+  const { data, error } = await supabase
+    .from('restaurant_reviews_1')
+    .delete()
+    .eq('id', id)
+    
+  if (error) throw error
+  return data
+}

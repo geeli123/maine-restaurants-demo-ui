@@ -271,3 +271,332 @@
   font-size: 0.875rem;
   border: 1px solid #cbd5e1;
 }
+
+/* Clickable Restaurant Rows & Table Enhancements */
+.clickable-restaurant-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-restaurant-row:hover {
+  background-color: #f8fafc;
+}
+
+.restaurant-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.restaurant-name-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0284c7;
+  text-align: left;
+  cursor: pointer;
+  display: inline-block;
+  transition: color 0.15s ease;
+}
+
+.restaurant-name-link:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+.restaurant-subtext {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: normal;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.action-btn:hover {
+  background: #f1f5f9;
+}
+
+.reviews-action-btn {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.reviews-action-btn:hover {
+  background: #bae6fd;
+  color: #0284c7;
+}
+
+.delete-btn {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff5f5;
+}
+
+.delete-btn:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Large Modal */
+.modal-large {
+  max-width: 860px;
+  width: 95%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reviews Management Header & Bar */
+.reviews-management-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1.25rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.25rem;
+}
+
+.reviews-count-tag {
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.reviews-count-tag strong {
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.add-review-toggle-btn {
+  padding: 0.5rem 1rem;
+  background: #0284c7;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.add-review-toggle-btn:hover {
+  background: #0369a1;
+}
+
+.add-review-toggle-btn.is-active {
+  background: #64748b;
+}
+
+.add-review-toggle-btn.is-active:hover {
+  background: #475569;
+}
+
+/* Review Form Panel */
+.review-form-card {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.review-form-card.edit-mode {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.review-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.review-form-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.review-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.review-admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.review-admin-form input,
+.review-admin-form select,
+.review-admin-form textarea {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+  font-family: inherit;
+}
+
+.review-admin-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Alert Banner */
+.alert-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.alert-success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.alert-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.alert-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.alert-close-btn:hover {
+  opacity: 1;
+}
+
+/* Empty Reviews State */
+.empty-reviews-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+}
+
+/* Reviews Grid & Cards */
+.reviews-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-review-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-review-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.admin-review-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.admin-review-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.admin-review-title a {
+  color: #0284c7;
+  text-decoration: none;
+}
+
+.admin-review-title a:hover {
+  text-decoration: underline;
+}
+
+.admin-review-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.35rem;
+}
+
+.admin-review-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.admin-review-snippet {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.5;
+  border-left: 3px solid #0284c7;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
