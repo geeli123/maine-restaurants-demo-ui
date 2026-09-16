@@ -1,25 +1,31 @@
 # Generate Embedding Edge Function
 
-This Supabase Edge Function converts text to vector embeddings using Google's Gemini API.
+This Supabase Edge Function converts text to vector embeddings using Google's Gemini API, with automatic caching in a Supabase database table (`query_embeddings_cache`) to prevent repeat Google API costs and drastically reduce latency.
 
 ## Setup
 
-1. **Install Supabase CLI** (if not already installed):
+1. **Run Database Migration for Embedding Cache**:
+Run the SQL in `sql/query_embeddings_cache.sql` in your Supabase project's SQL Editor (or via `supabase db push`). This creates:
+- The `query_embeddings_cache` table with `vector(768)`
+- An index on `query_hash` (SHA-256) for O(1) cache lookups
+- Row-Level Security policies allowing the Edge Function service role to manage the cache
+
+2. **Install Supabase CLI** (if not already installed):
 ```bash
 npm install -g supabase
 ```
 
-2. **Login to Supabase**:
+3. **Login to Supabase**:
 ```bash
 supabase login
 ```
 
-3. **Link to your Supabase project**:
+4. **Link to your Supabase project**:
 ```bash
 supabase link --project-ref your-project-ref
 ```
 
-4. **Set the Gemini API key as a secret**:
+5. **Set the Gemini API key as a secret**:
 ```bash
 supabase secrets set GEMINI_API_KEY=your-gemini-api-key
 ```
@@ -29,25 +35,26 @@ To get a Gemini API key:
 - Sign in with your Google account
 - Navigate to "Get API key" and create a new key
 
-5. **Deploy the Edge Function**:
+6. **Deploy the Edge Function**:
 ```bash
 supabase functions deploy generate-embedding
 ```
 
+## How Caching Works
+
+1. When a request comes in with `{ text }`, the text is trimmed, lowercased, and hashed with SHA-256.
+2. The function queries `query_embeddings_cache` for `query_hash`.
+3. **Cache Hit**:
+   - Returns `{ embedding: [...], cached: true }`
+   - Increments `hit_count` and updates `last_accessed_at` in the background.
+   - **Cost**: $0 (no call to Google Gemini API).
+   - **Latency**: ~20-40ms instead of ~500ms.
+4. **Cache Miss**:
+   - Calls Gemini Embedding API (`gemini-embedding-001`).
+   - Inserts row into `query_embeddings_cache`.
+   - Returns `{ embedding: [...], cached: false }`.
+
 ## Testing
-
-Test the Edge Function locally:
-```bash
-supabase functions serve generate-embedding --env-file ./supabase/.env.local
-```
-
-Then in another terminal:
-```bash
-curl -X POST 'http://localhost:54321/functions/v1/generate-embedding' \
-  -H 'Authorization: Bearer YOUR_ANON_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"text":"best seafood restaurants in Portland"}'
-```
 
 Test the deployed Edge Function:
 ```bash
@@ -55,6 +62,22 @@ curl -X POST 'https://your-project-ref.supabase.co/functions/v1/generate-embeddi
   -H 'Authorization: Bearer YOUR_ANON_KEY' \
   -H 'Content-Type: application/json' \
   -d '{"text":"best seafood restaurants in Portland"}'
+```
+
+First call response:
+```json
+{
+  "embedding": [0.123, -0.456, ...],
+  "cached": false
+}
+```
+
+Subsequent call response (same query):
+```json
+{
+  "embedding": [0.123, -0.456, ...],
+  "cached": true
+}
 ```
 
 ## API
@@ -71,7 +94,8 @@ curl -X POST 'https://your-project-ref.supabase.co/functions/v1/generate-embeddi
 **Response** (Success):
 ```json
 {
-  "embedding": [0.123, -0.456, 0.789, ...]
+  "embedding": [0.123, -0.456, 0.789, ...],
+  "cached": true
 }
 ```
 
@@ -85,7 +109,8 @@ curl -X POST 'https://your-project-ref.supabase.co/functions/v1/generate-embeddi
 
 ## Notes
 
-- The function uses Google's `embedding-001` model which produces 768-dimensional vectors
+- Uses Google's `gemini-embedding-001` model (768-dimensional vectors)
 - Maximum text length is 10,000 characters
-- The function includes CORS headers for cross-origin requests
-- API key is stored securely as a Supabase secret (not in code)
+- Uses Web Crypto API (`crypto.subtle`) for hashing
+- If database cache lookup fails, it automatically falls back to Gemini API without failing the user's search
+- In-memory session caching is also enabled in the frontend client (`embeddingService.js`)

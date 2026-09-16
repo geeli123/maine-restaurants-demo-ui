@@ -1,7 +1,11 @@
 import { supabase } from '../config/supabase'
 
+// In-memory cache for the current browser session
+const sessionEmbeddingCache = new Map()
+
 /**
  * Generate embedding vector from text using Gemini API via Supabase Edge Function
+ * (Cached in-memory and in Supabase query_embeddings_cache table)
  * @param {string} text - Search query text
  * @returns {Promise<number[]>} - 768-dimensional embedding vector
  * @throws {Error} - If embedding generation fails
@@ -17,8 +21,15 @@ export async function generateEmbedding(text) {
     throw new Error('Search text is too long (maximum 10,000 characters)')
   }
 
+  const normalized = text.trim().toLowerCase()
+
+  // Check browser session cache first (0ms latency, 0 network calls)
+  if (sessionEmbeddingCache.has(normalized)) {
+    return sessionEmbeddingCache.get(normalized)
+  }
+
   try {
-    // Call Supabase Edge Function
+    // Call Supabase Edge Function (which checks query_embeddings_cache table before Gemini API)
     const { data, error } = await supabase.functions.invoke('generate-embedding', {
       body: { text: text.trim() }
     })
@@ -39,7 +50,10 @@ export async function generateEmbedding(text) {
         `Invalid embedding dimension: expected 768, got ${data.embedding.length}`
       )
     }
-    console.log(data.embedding)
+
+    // Store in browser session cache
+    sessionEmbeddingCache.set(normalized, data.embedding)
+
     return data.embedding
   } catch (error) {
     // Re-throw with context if not already an Error object
