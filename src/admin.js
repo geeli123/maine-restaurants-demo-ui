@@ -33,6 +33,9 @@ const state = {
   searchQuery: '',
   statusFilter: 'ALL',
   businessStatusFilter: 'ALL',
+  page: 1,
+  pageSize: 50,
+  totalCount: 0,
   items: [],
   loading: false,
   error: null,
@@ -74,13 +77,28 @@ async function loadData() {
   
   try {
     if (state.activeTab === 'restaurants') {
-      state.items = await fetchRestaurants(state.searchQuery, state.statusFilter, state.businessStatusFilter)
+      const result = await fetchRestaurants(
+        state.searchQuery,
+        state.statusFilter,
+        state.businessStatusFilter,
+        state.page,
+        state.pageSize
+      )
+      state.items = result.data
+      state.totalCount = result.count
     } else {
       if (state.allRestaurants.length === 0) {
         const { data } = await supabase.from('restaurants_1').select('id, name').order('name')
         state.allRestaurants = data || []
       }
-      state.items = await fetchReviews(state.searchQuery, state.statusFilter)
+      const result = await fetchReviews(
+        state.searchQuery,
+        state.statusFilter,
+        state.page,
+        state.pageSize
+      )
+      state.items = result.data
+      state.totalCount = result.count
     }
   } catch (err) {
     state.error = err.message
@@ -111,21 +129,39 @@ window.setTab = (tab) => {
   state.searchQuery = ''
   state.statusFilter = 'ALL'
   state.businessStatusFilter = 'ALL'
+  state.page = 1
   loadData()
 }
 
 window.handleSearch = (e) => {
   state.searchQuery = e.target.value
+  state.page = 1
   loadData()
 }
 
 window.handleStatusFilter = (e) => {
   state.statusFilter = e.target.value
+  state.page = 1
   loadData()
 }
 
 window.handleBusinessStatusFilter = (e) => {
   state.businessStatusFilter = e.target.value
+  state.page = 1
+  loadData()
+}
+
+window.handlePageChange = (newPage) => {
+  const totalPages = Math.ceil(state.totalCount / state.pageSize) || 1
+  if (newPage < 1 || newPage > totalPages || newPage === state.page) return
+  state.page = newPage
+  loadData()
+}
+
+window.handlePageSizeChange = (e) => {
+  const newSize = parseInt(e.target.value, 10) || 50
+  state.pageSize = newSize
+  state.page = 1
   loadData()
 }
 
@@ -351,6 +387,7 @@ window.handleSave = async (e) => {
       } else {
         await createReview(updates)
       }
+      state.page = 1
     } else {
       if (state.activeTab === 'restaurants') {
         await updateRestaurant(state.editingItem.id, updates)
@@ -745,6 +782,113 @@ function renderRestaurantReviewsModal() {
   `
 }
 
+function getPaginationPages(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+  }
+  const pages = []
+  if (currentPage <= 4) {
+    for (let i = 1; i <= 5; i++) pages.push(i)
+    pages.push('...')
+    pages.push(totalPages)
+  } else if (currentPage >= totalPages - 3) {
+    pages.push(1)
+    pages.push('...')
+    for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    pages.push('...')
+    pages.push(currentPage - 1)
+    pages.push(currentPage)
+    pages.push(currentPage + 1)
+    pages.push('...')
+    pages.push(totalPages)
+  }
+  return pages
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(state.totalCount / state.pageSize) || 1
+  const fromItem = state.totalCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1
+  const toItem = Math.min(state.page * state.pageSize, state.totalCount)
+  const itemType = state.activeTab === 'restaurants' ? 'restaurants' : 'reviews'
+  const pages = getPaginationPages(state.page, totalPages)
+
+  return `
+    <div class="pagination-bar">
+      <div class="pagination-info">
+        Showing <strong>${fromItem.toLocaleString()}</strong>–<strong>${toItem.toLocaleString()}</strong> of <strong>${state.totalCount.toLocaleString()}</strong> ${itemType}
+      </div>
+
+      <div class="pagination-controls-wrapper">
+        <div class="page-size-picker">
+          <label for="page-size-select">Per page:</label>
+          <select id="page-size-select" onchange="window.handlePageSizeChange(event)">
+            <option value="25" ${state.pageSize === 25 ? 'selected' : ''}>25</option>
+            <option value="50" ${state.pageSize === 50 ? 'selected' : ''}>50</option>
+            <option value="100" ${state.pageSize === 100 ? 'selected' : ''}>100</option>
+            <option value="200" ${state.pageSize === 200 ? 'selected' : ''}>200</option>
+          </select>
+        </div>
+
+        <div class="pagination-buttons">
+          <button 
+            type="button" 
+            class="pagination-nav-btn" 
+            onclick="window.handlePageChange(1)" 
+            ${state.page <= 1 ? 'disabled' : ''}
+            title="First Page">
+            &laquo;
+          </button>
+          <button 
+            type="button" 
+            class="pagination-nav-btn" 
+            onclick="window.handlePageChange(${state.page - 1})" 
+            ${state.page <= 1 ? 'disabled' : ''}
+            title="Previous Page">
+            &lsaquo; Prev
+          </button>
+
+          <div class="pagination-page-numbers">
+            ${pages.map(p => {
+              if (p === '...') {
+                return `<span class="pagination-ellipsis">&hellip;</span>`
+              }
+              const isActive = p === state.page
+              return `
+                <button 
+                  type="button" 
+                  class="pagination-num-btn ${isActive ? 'active' : ''}" 
+                  onclick="window.handlePageChange(${p})"
+                  ${isActive ? 'aria-current="page"' : ''}>
+                  ${p}
+                </button>
+              `
+            }).join('')}
+          </div>
+
+          <button 
+            type="button" 
+            class="pagination-nav-btn" 
+            onclick="window.handlePageChange(${state.page + 1})" 
+            ${state.page >= totalPages ? 'disabled' : ''}
+            title="Next Page">
+            Next &rsaquo;
+          </button>
+          <button 
+            type="button" 
+            class="pagination-nav-btn" 
+            onclick="window.handlePageChange(${totalPages})" 
+            ${state.page >= totalPages ? 'disabled' : ''}
+            title="Last Page">
+            &raquo;
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+}
+
 function renderDashboard() {
   return `
     <div class="admin-app">
@@ -843,6 +987,8 @@ function renderDashboard() {
           </tbody>
         </table>
       </div>
+
+      ${renderPagination()}
 
       ${renderEditModal()}
       ${renderRestaurantReviewsModal()}

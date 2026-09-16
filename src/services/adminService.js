@@ -1,7 +1,7 @@
 import { supabase } from '../config/supabase'
 
-export async function fetchRestaurants(search = '', status = 'ALL', businessStatus = 'ALL') {
-  let query = supabase.from('restaurants_1').select('*')
+export async function fetchRestaurants(search = '', status = 'ALL', businessStatus = 'ALL', page = 1, pageSize = 50) {
+  let query = supabase.from('restaurants_1').select('*', { count: 'exact' })
   
   if (search) {
     query = query.ilike('name', `%${search}%`)
@@ -15,15 +15,21 @@ export async function fetchRestaurants(search = '', status = 'ALL', businessStat
     query = query.eq('business_status', businessStatus)
   }
   
-  query = query.order('created_at', { ascending: false }).limit(50)
+  query = query.order('created_at', { ascending: false })
+
+  if (page && pageSize) {
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    query = query.range(from, to)
+  }
   
-  const { data, error } = await query
+  const { data, count, error } = await query
   if (error) throw error
-  return data
+  return { data: data || [], count: count ?? (data ? data.length : 0) }
 }
 
-export async function fetchReviews(search = '', status = 'ALL') {
-  let query = supabase.from('restaurant_reviews_1').select('*, restaurants_1(name)')
+export async function fetchReviews(search = '', status = 'ALL', page = 1, pageSize = 50) {
+  let query = supabase.from('restaurant_reviews_1').select('*, restaurants_1(name)', { count: 'exact' })
   
   if (search) {
     query = query.ilike('title', `%${search}%`)
@@ -33,11 +39,17 @@ export async function fetchReviews(search = '', status = 'ALL') {
     query = query.eq('status', status)
   }
   
-  query = query.order('created_at', { ascending: false }).limit(50)
+  query = query.order('created_at', { ascending: false })
+
+  if (page && pageSize) {
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    query = query.range(from, to)
+  }
   
-  const { data, error } = await query
+  const { data, count, error } = await query
   if (error) throw error
-  return data
+  return { data: data || [], count: count ?? (data ? data.length : 0) }
 }
 
 export async function updateRestaurant(id, updates) {
