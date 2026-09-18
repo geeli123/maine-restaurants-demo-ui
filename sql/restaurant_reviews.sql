@@ -32,6 +32,7 @@ create table if not exists public.restaurants_1 (
   embedding vector(768),  -- Adjust dimension based on your embedding model
 
   -- Best of Lists
+  best_of_2026 boolean default false,
   best_of_2025 boolean default false,
   best_of_2024 boolean default false,
   best_of_2023 boolean default false,
@@ -70,6 +71,13 @@ create table if not exists public.restaurant_reviews_1 (
 
   constraint unique_restaurant_post unique (restaurant_id, post_id)
 );
+
+-- Ensure columns exist if table already existed
+alter table public.restaurants_1 
+  add column if not exists business_status text default 'OPEN';
+
+alter table public.restaurants_1 
+  add column if not exists best_of_2026 boolean default false;
 
 -- Enable Row Level Security (RLS)
 alter table public.restaurant_reviews_1 enable row level security;
@@ -163,6 +171,7 @@ returns table (
   address text,
   description text,
   keywords text[],
+  best_of_2026 boolean,
   best_of_2025 boolean,
   best_of_2024 boolean,
   best_of_2023 boolean,
@@ -186,6 +195,7 @@ begin
     r.address,
     r.description,
     r.keywords,
+    r.best_of_2026,
     r.best_of_2025,
     r.best_of_2024,
     r.best_of_2023,
@@ -243,6 +253,7 @@ returns table (
   address text,
   description text,
   keywords text[],
+  best_of_2026 boolean,
   best_of_2025 boolean,
   best_of_2024 boolean,
   best_of_2023 boolean,
@@ -266,6 +277,7 @@ begin
     r.address,
     r.description,
     r.keywords,
+    r.best_of_2026,
     r.best_of_2025,
     r.best_of_2024,
     r.best_of_2023,

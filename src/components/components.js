@@ -35,6 +35,7 @@ export function renderErrorMessage(error, onRetry) {
 }
 
 const BADGE_URLS = {
+  2026: "https://www.pressherald.com/2026/02/26/best-75-places-to-eat-and-drink-in-greater-portland-in-2026/",
   2025: "https://www.pressherald.com/2025/02/27/best-75-places-to-eat-and-drink-in-greater-portland-in-2025/",
   2024: "https://www.pressherald.com/2024/02/26/best-75-places-to-eat-and-drink-in-greater-portland-in-2024/",
   2023: "https://www.pressherald.com/2023/01/12/best-75-places-to-eat-and-drink-in-greater-portland/",
@@ -43,7 +44,7 @@ const BADGE_URLS = {
 };
 
 function renderBestOfBadges(restaurant) {
-  const years = [2025, 2024, 2023, 2022, 2021];
+  const years = [2026, 2025, 2024, 2023, 2022, 2021];
   const badges = years
     .filter(year => restaurant[`best_of_${year}`])
     .map(year => {

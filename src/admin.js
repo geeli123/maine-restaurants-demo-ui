@@ -1,6 +1,7 @@
 import { supabase } from './config/supabase'
 import {
   fetchRestaurants,
+  fetchBestOfRestaurants,
   fetchReviews,
   updateRestaurant,
   updateReview,
@@ -29,10 +30,11 @@ const PREDEFINED_KEYWORDS = {
 // Application State
 const state = {
   user: null,
-  activeTab: 'restaurants', // 'restaurants' or 'reviews'
+  activeTab: 'restaurants', // 'restaurants', 'best_of', or 'reviews'
   searchQuery: '',
   statusFilter: 'ALL',
   businessStatusFilter: 'ALL',
+  bestOfYearFilter: 'ALL',
   page: 1,
   pageSize: 50,
   totalCount: 0,
@@ -86,6 +88,17 @@ async function loadData() {
       )
       state.items = result.data
       state.totalCount = result.count
+    } else if (state.activeTab === 'best_of') {
+      const result = await fetchBestOfRestaurants(
+        state.searchQuery,
+        state.bestOfYearFilter,
+        state.statusFilter,
+        state.businessStatusFilter,
+        state.page,
+        state.pageSize
+      )
+      state.items = result.data
+      state.totalCount = result.count
     } else {
       if (state.allRestaurants.length === 0) {
         const { data } = await supabase.from('restaurants_1').select('id, name').order('name')
@@ -129,6 +142,7 @@ window.setTab = (tab) => {
   state.searchQuery = ''
   state.statusFilter = 'ALL'
   state.businessStatusFilter = 'ALL'
+  state.bestOfYearFilter = 'ALL'
   state.page = 1
   loadData()
 }
@@ -147,6 +161,12 @@ window.handleStatusFilter = (e) => {
 
 window.handleBusinessStatusFilter = (e) => {
   state.businessStatusFilter = e.target.value
+  state.page = 1
+  loadData()
+}
+
+window.handleBestOfYearFilter = (e) => {
+  state.bestOfYearFilter = e.target.value
   state.page = 1
   loadData()
 }
@@ -172,7 +192,7 @@ window.openEditModal = (id) => {
 }
 
 window.openAddModal = () => {
-  if (state.activeTab === 'restaurants') {
+  if (state.activeTab === 'restaurants' || state.activeTab === 'best_of') {
     state.editingItem = {
       name: '',
       status: 'STAGING',
@@ -180,11 +200,12 @@ window.openAddModal = () => {
       address: '',
       keywords: [],
       description: '',
-      best_of_2025: false,
-      best_of_2024: false,
-      best_of_2023: false,
-      best_of_2022: false,
-      best_of_2021: false
+      best_of_2026: state.activeTab === 'best_of' && state.bestOfYearFilter === '2026',
+      best_of_2025: state.activeTab === 'best_of' && state.bestOfYearFilter === '2025',
+      best_of_2024: state.activeTab === 'best_of' && state.bestOfYearFilter === '2024',
+      best_of_2023: state.activeTab === 'best_of' && state.bestOfYearFilter === '2023',
+      best_of_2022: state.activeTab === 'best_of' && state.bestOfYearFilter === '2022',
+      best_of_2021: state.activeTab === 'best_of' && state.bestOfYearFilter === '2021'
     }
   } else {
     state.editingItem = {
@@ -372,24 +393,24 @@ window.handleSave = async (e) => {
   const formData = new FormData(e.target)
   const updates = Object.fromEntries(formData.entries())
   
-  if (state.activeTab === 'restaurants') {
+  if (state.activeTab === 'restaurants' || state.activeTab === 'best_of') {
     updates.business_status = formData.get('business_status') || 'OPEN'
     updates.keywords = formData.getAll('keywords')
-    ;[2025, 2024, 2023, 2022, 2021].forEach(year => {
+    ;[2026, 2025, 2024, 2023, 2022, 2021].forEach(year => {
       updates[`best_of_${year}`] = formData.get(`best_of_${year}`) === 'true'
     })
   }
   
   try {
     if (state.isAddingNew) {
-      if (state.activeTab === 'restaurants') {
+      if (state.activeTab === 'restaurants' || state.activeTab === 'best_of') {
         await createRestaurant(updates)
       } else {
         await createReview(updates)
       }
       state.page = 1
     } else {
-      if (state.activeTab === 'restaurants') {
+      if (state.activeTab === 'restaurants' || state.activeTab === 'best_of') {
         await updateRestaurant(state.editingItem.id, updates)
       } else {
         await updateReview(state.editingItem.id, updates)
@@ -426,7 +447,7 @@ function renderEditModal() {
   if (!state.editingItem) return ''
   
   const item = state.editingItem
-  const isRest = state.activeTab === 'restaurants'
+  const isRest = state.activeTab === 'restaurants' || state.activeTab === 'best_of'
   
   return `
     <div class="modal-overlay" onclick="if(event.target === this) window.closeEditModal()">
@@ -504,7 +525,7 @@ function renderEditModal() {
 
             <fieldset style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 0.5rem; margin-top: 0.5rem;">
               <legend style="font-weight: 500; font-size: 0.875rem;">Best Of Badges</legend>
-              ${[2025, 2024, 2023, 2022, 2021].map(year => `
+              ${[2026, 2025, 2024, 2023, 2022, 2021].map(year => `
                 <label style="flex-direction: row; align-items: center; gap: 0.5rem; font-weight: normal;">
                   <input type="checkbox" name="best_of_${year}" value="true" ${item[`best_of_${year}`] ? 'checked' : ''} />
                   Best of ${year}
@@ -807,11 +828,32 @@ function getPaginationPages(currentPage, totalPages) {
   return pages
 }
 
+function renderAdminBestOfBadges(item) {
+  const years = [2026, 2025, 2024, 2023, 2022, 2021]
+  const wonYears = years.filter(y => item[`best_of_${y}`])
+  if (wonYears.length === 0) {
+    return `<span style="color: #94a3b8; font-size: 0.8rem;">—</span>`
+  }
+  return `
+    <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
+      ${wonYears.map(y => `
+        <span class="admin-award-badge badge-year-${y}" title="Best of ${y}">
+          ★ ${y}
+        </span>
+      `).join('')}
+    </div>
+  `
+}
+
 function renderPagination() {
   const totalPages = Math.ceil(state.totalCount / state.pageSize) || 1
   const fromItem = state.totalCount === 0 ? 0 : (state.page - 1) * state.pageSize + 1
   const toItem = Math.min(state.page * state.pageSize, state.totalCount)
-  const itemType = state.activeTab === 'restaurants' ? 'restaurants' : 'reviews'
+  const itemType = state.activeTab === 'reviews' 
+    ? 'reviews' 
+    : (state.activeTab === 'best_of' 
+        ? (state.bestOfYearFilter === 'ALL' ? 'honored restaurants' : `Best of ${state.bestOfYearFilter} restaurants`)
+        : 'restaurants')
   const pages = getPaginationPages(state.page, totalPages)
 
   return `
@@ -890,6 +932,8 @@ function renderPagination() {
 }
 
 function renderDashboard() {
+  const isRestOrBestOf = state.activeTab === 'restaurants' || state.activeTab === 'best_of'
+
   return `
     <div class="admin-app">
       <header class="admin-header">
@@ -902,11 +946,25 @@ function renderDashboard() {
 
       <div class="tabs">
         <button class="tab-btn ${state.activeTab === 'restaurants' ? 'active' : ''}" onclick="window.setTab('restaurants')">Restaurants</button>
+        <button class="tab-btn ${state.activeTab === 'best_of' ? 'active' : ''}" onclick="window.setTab('best_of')">🏆 Best Of Lists</button>
         <button class="tab-btn ${state.activeTab === 'reviews' ? 'active' : ''}" onclick="window.setTab('reviews')">Reviews</button>
       </div>
 
       <div class="dashboard-controls" style="display: flex; gap: 1rem; flex-wrap: wrap;">
         <input type="text" placeholder="Search by name or title..." value="${state.searchQuery}" onchange="window.handleSearch(event)" style="flex: 1; min-width: 200px;" />
+        
+        ${state.activeTab === 'best_of' ? `
+          <select onchange="window.handleBestOfYearFilter(event)" style="border-color: #f59e0b; background: #fffbeb; font-weight: 500;">
+            <option value="ALL" ${state.bestOfYearFilter === 'ALL' ? 'selected' : ''}>All Best Of Years (Any)</option>
+            <option value="2026" ${state.bestOfYearFilter === '2026' ? 'selected' : ''}>Best of 2026</option>
+            <option value="2025" ${state.bestOfYearFilter === '2025' ? 'selected' : ''}>Best of 2025</option>
+            <option value="2024" ${state.bestOfYearFilter === '2024' ? 'selected' : ''}>Best of 2024</option>
+            <option value="2023" ${state.bestOfYearFilter === '2023' ? 'selected' : ''}>Best of 2023</option>
+            <option value="2022" ${state.bestOfYearFilter === '2022' ? 'selected' : ''}>Best of 2022</option>
+            <option value="2021" ${state.bestOfYearFilter === '2021' ? 'selected' : ''}>Best of 2021</option>
+          </select>
+        ` : ''}
+
         <select onchange="window.handleStatusFilter(event)">
           <option value="ALL" ${state.statusFilter === 'ALL' ? 'selected' : ''}>All Curation Statuses</option>
           <option value="STAGING" ${state.statusFilter === 'STAGING' ? 'selected' : ''}>STAGING</option>
@@ -914,7 +972,8 @@ function renderDashboard() {
           <option value="APPROVED" ${state.statusFilter === 'APPROVED' ? 'selected' : ''}>APPROVED</option>
           <option value="DISCARDED" ${state.statusFilter === 'DISCARDED' ? 'selected' : ''}>DISCARDED</option>
         </select>
-        ${state.activeTab === 'restaurants' ? `
+
+        ${isRestOrBestOf ? `
           <select onchange="window.handleBusinessStatusFilter(event)">
             <option value="ALL" ${state.businessStatusFilter === 'ALL' ? 'selected' : ''}>All Business Statuses</option>
             <option value="OPEN" ${state.businessStatusFilter === 'OPEN' ? 'selected' : ''}>OPEN</option>
@@ -922,6 +981,7 @@ function renderDashboard() {
             <option value="CLOSED_PERMANENTLY" ${state.businessStatusFilter === 'CLOSED_PERMANENTLY' ? 'selected' : ''}>CLOSED_PERMANENTLY</option>
           </select>
         ` : ''}
+
         <button onclick="window.openAddModal()" style="padding: 0.5rem 1rem; background: #0ea5e9; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">+ Add New</button>
       </div>
 
@@ -933,7 +993,8 @@ function renderDashboard() {
           <thead>
             <tr>
               <th>Name / Title</th>
-              ${state.activeTab === 'restaurants' ? `
+              ${isRestOrBestOf ? `
+                <th>Awards</th>
                 <th>Curation</th>
                 <th>Business Status</th>
               ` : `
@@ -945,7 +1006,7 @@ function renderDashboard() {
           </thead>
           <tbody>
             ${state.items.map(item => `
-              ${state.activeTab === 'restaurants' ? `
+              ${isRestOrBestOf ? `
                 <tr class="clickable-restaurant-row" onclick="window.openRestaurantReviewsModal('${item.id}')">
                   <td style="font-weight: 500;">
                     <div class="restaurant-name-cell">
@@ -954,6 +1015,9 @@ function renderDashboard() {
                       </button>
                       ${item.address ? `<div class="restaurant-subtext">📍 ${item.address}</div>` : ''}
                     </div>
+                  </td>
+                  <td>
+                    ${renderAdminBestOfBadges(item)}
                   </td>
                   <td><span class="status-badge status-${item.status}">${item.status}</span></td>
                   <td><span class="business-status-badge business-status-${item.business_status || 'OPEN'}">● ${item.business_status || 'OPEN'}</span></td>
@@ -983,7 +1047,7 @@ function renderDashboard() {
                 </tr>
               `}
             `).join('')}
-            ${state.items.length === 0 && !state.loading ? '<tr><td colspan="5" style="text-align: center; color: #64748b;">No items found.</td></tr>' : ''}
+            ${state.items.length === 0 && !state.loading ? '<tr><td colspan="6" style="text-align: center; color: #64748b; padding: 2rem;">No items found.</td></tr>' : ''}
           </tbody>
         </table>
       </div>
