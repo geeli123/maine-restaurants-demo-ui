@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           restaurant = {
             ...restaurant,
             ...data,
-            reviews: data.restaurant_reviews_1 || restaurant.reviews || []
+            reviews: (data.restaurant_reviews_1 || restaurant.reviews || []).filter(r => r.status === 'APPROVED' || r.status === 'ACTIVE' || !r.status)
           };
           contentArea.innerHTML = renderRestaurantDetails(restaurant);
         }
@@ -64,6 +64,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (error || !data) {
         throw new Error(error?.message || 'Restaurant not found');
+      }
+
+      const bStatus = String(data.business_status || 'OPEN').trim().toUpperCase();
+      const isClosed = bStatus !== 'OPEN' || bStatus.includes('CLOSED');
+      const cStatus = String(data.status || '').trim().toUpperCase();
+      const isDiscardedOrStaging = cStatus === 'DISCARDED' || cStatus === 'STAGING' || (cStatus !== 'ACTIVE' && cStatus !== 'APPROVED');
+
+      if (isClosed || isDiscardedOrStaging) {
+        throw new Error('Restaurant is currently unavailable');
       }
 
       restaurant = {

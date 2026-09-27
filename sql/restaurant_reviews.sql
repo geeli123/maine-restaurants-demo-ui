@@ -226,6 +226,7 @@ begin
         )
         from public.restaurant_reviews_1 rev
         where rev.restaurant_id = r.id
+          and (rev.status is null or rev.status in ('ACTIVE', 'APPROVED'))
       ),
       '[]'::json
     ) as reviews,
@@ -234,6 +235,7 @@ begin
   from public.restaurants_1 r
   where 1 - (r.embedding <=> query_embedding) > match_threshold
     and coalesce(r.business_status, 'OPEN') = 'OPEN'
+    and r.status in ('ACTIVE', 'APPROVED')
   order by r.embedding <=> query_embedding
   limit match_count;
 end;
@@ -310,6 +312,7 @@ begin
         )
         from public.restaurant_reviews_1 rev
         where rev.restaurant_id = r.id
+          and (rev.status is null or rev.status in ('ACTIVE', 'APPROVED'))
       ),
       '[]'::json
     ) as reviews,
@@ -328,6 +331,7 @@ begin
       or 1 - (r.embedding <=> query_embedding) > match_threshold
     )
     and coalesce(r.business_status, 'OPEN') = 'OPEN'
+    and r.status in ('ACTIVE', 'APPROVED')
   order by r.embedding <=> query_embedding
   limit match_count;
 end;

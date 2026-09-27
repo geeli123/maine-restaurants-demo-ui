@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase'
+import { supabase } from '../config/supabase.js'
 
 export async function fetchRestaurants(search = '', status = 'ALL', businessStatus = 'ALL', page = 1, pageSize = 50) {
   let query = supabase.from('restaurants_1').select('*', { count: 'exact' })
