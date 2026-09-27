@@ -27,6 +27,7 @@ create table if not exists public.restaurants_1 (
   latitude double precision,
   longitude double precision,
   address text,
+  additional_addresses text[] default '{}'::text[],
 
   -- Vector embedding for semantic search directly against the restaurant
   embedding vector(768),  -- Adjust dimension based on your embedding model
@@ -78,6 +79,9 @@ alter table public.restaurants_1
 
 alter table public.restaurants_1 
   add column if not exists best_of_2026 boolean default false;
+
+alter table public.restaurants_1 
+  add column if not exists additional_addresses text[] default '{}'::text[];
 
 -- Enable Row Level Security (RLS)
 alter table public.restaurant_reviews_1 enable row level security;
@@ -169,6 +173,7 @@ returns table (
   name text,
   location text,
   address text,
+  additional_addresses text[],
   description text,
   keywords text[],
   best_of_2026 boolean,
@@ -193,6 +198,7 @@ begin
     r.name,
     r.location,
     r.address,
+    r.additional_addresses,
     r.description,
     r.keywords,
     r.best_of_2026,
@@ -251,6 +257,7 @@ returns table (
   name text,
   location text,
   address text,
+  additional_addresses text[],
   description text,
   keywords text[],
   best_of_2026 boolean,
@@ -275,6 +282,7 @@ begin
     r.name,
     r.location,
     r.address,
+    r.additional_addresses,
     r.description,
     r.keywords,
     r.best_of_2026,
@@ -312,6 +320,9 @@ begin
     (
       r.name ilike '%' || search_query || '%'
       or r.location ilike '%' || search_query || '%'
+      or r.address ilike '%' || search_query || '%'
+      or array_to_string(r.additional_addresses, ' ') ilike '%' || search_query || '%'
+      or exists (select 1 from unnest(r.additional_addresses) as addr where search_query ilike '%' || addr || '%')
       or array_to_string(r.keywords, ' ') ilike '%' || search_query || '%'
       or exists (select 1 from unnest(r.keywords) as kw where search_query ilike '%' || kw || '%')
       or 1 - (r.embedding <=> query_embedding) > match_threshold

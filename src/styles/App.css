@@ -668,6 +668,94 @@ body {
   margin-bottom: 0;
 }
 
+.restaurant-addresses-section {
+  margin-bottom: 3rem;
+}
+
+.restaurant-addresses-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--header-font);
+}
+
+.restaurant-addresses-section .section-icon {
+  color: var(--metln02, #007B6B);
+}
+
+.addresses-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .addresses-list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+.address-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.address-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--metln03, #75AC91);
+}
+
+.address-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--metln02, #007B6B);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.address-card-body {
+  display: flex;
+  align-items: flex-start;
+}
+
+.address-card-body .address-link {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 1rem;
+  line-height: 1.45;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.address-card-body .address-link:hover {
+  color: var(--metln05, #F7953E);
+}
+
+.additional-locations-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--metln02, #007B6B);
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
 .restaurant-reviews-section h3 {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;

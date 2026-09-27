@@ -3,6 +3,7 @@
 // Decode HTML entities in text
 function decodeHTMLEntities(text) {
   if (!text) return text
+  if (typeof document === 'undefined') return text
   const textarea = document.createElement('textarea')
   textarea.innerHTML = text
   return textarea.value
@@ -127,6 +128,20 @@ export function renderRestaurantCard(result) {
           </svg>
           ${locationHtml}
         </div>
+        ${(() => {
+          const addrs = getAdditionalAddresses(result)
+          if (addrs.length === 0) return ''
+          return `
+            <div class="additional-locations-hint">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+              </svg>
+              <span>+${addrs.length} other location${addrs.length > 1 ? 's' : ''}</span>
+            </div>
+          `
+        })()}
         `;
     })()}
 
@@ -142,11 +157,78 @@ export function renderRestaurantCard(result) {
   `
 }
 
+// Extract and normalize additional addresses list
+export function getAdditionalAddresses(restaurant) {
+  if (!restaurant || !restaurant.additional_addresses) return []
+  let addrs = restaurant.additional_addresses
+  if (typeof addrs === 'string') {
+    try {
+      const parsed = JSON.parse(addrs)
+      if (Array.isArray(parsed)) addrs = parsed
+      else if (parsed) addrs = [parsed]
+    } catch {
+      addrs = addrs.split('\n')
+    }
+  }
+  if (Array.isArray(addrs)) {
+    return addrs
+      .map(a => (typeof a === 'string' ? a.trim() : String(a || '').trim()))
+      .filter(a => a.length > 0)
+  }
+  return []
+}
+
+// Additional Addresses Section Component
+export function renderAdditionalAddressesSection(addresses, restaurantName = '') {
+  if (!addresses || !Array.isArray(addresses) || addresses.length === 0) {
+    return ''
+  }
+
+  return `
+    <div class="restaurant-addresses-section">
+      <h3>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        Additional Locations (${addresses.length})
+      </h3>
+      <div class="addresses-list">
+        ${addresses.map((addr, idx) => {
+          const queryParams = new URLSearchParams()
+          queryParams.append('api', '1')
+          queryParams.append('query', restaurantName ? `${restaurantName} ${addr}` : addr)
+          const mapsUrl = `https://www.google.com/maps/search/?${queryParams.toString()}`
+
+          return `
+            <div class="address-card">
+              <div class="address-card-header">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>Location ${idx + 1}</span>
+              </div>
+              <div class="address-card-body">
+                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="address-link" title="Open location in Google Maps">
+                  ${addr}
+                </a>
+              </div>
+            </div>
+          `
+        }).join('')}
+      </div>
+    </div>
+  `
+}
+
 // Restaurant Details Component
 export function renderRestaurantDetails(restaurant) {
   const { name, address, location, description, keywords, reviews, similarity, google_maps_place_id } = restaurant
   const displayLocation = address || location || ''
   const tagList = Array.isArray(keywords) ? keywords.map(kw => `<span class="keyword-tag">${kw}</span>`).join('') : ''
+  const additionalAddresses = getAdditionalAddresses(restaurant)
+  const additionalAddressesHtml = renderAdditionalAddressesSection(additionalAddresses, name)
 
   return `
     <div class="restaurant-details">
@@ -190,6 +272,8 @@ export function renderRestaurantDetails(restaurant) {
           <p>${description}</p>
         </div>
       ` : ''}
+
+      ${additionalAddressesHtml}
 
       <div class="restaurant-reviews-section">
         <h3>Read More (${reviews ? reviews.length : 0})</h3>

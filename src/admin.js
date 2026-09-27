@@ -198,6 +198,7 @@ window.openAddModal = () => {
       status: 'STAGING',
       business_status: 'OPEN',
       address: '',
+      additional_addresses: [],
       keywords: [],
       description: '',
       best_of_2026: state.activeTab === 'best_of' && state.bestOfYearFilter === '2026',
@@ -226,16 +227,13 @@ window.closeEditModal = () => {
   render()
 }
 
-// Restaurant Reviews Modal Handlers
+// Restaurant Reviews & Locations Modal Handlers
 window.openRestaurantReviewsModal = async (restaurantId) => {
   let restaurant = state.items.find(item => item.id === restaurantId)
-  if (!restaurant) {
-    restaurant = state.allRestaurants.find(item => item.id === restaurantId)
-  }
-  if (!restaurant) {
+  if (!restaurant || !restaurant.address || restaurant.additional_addresses === undefined) {
     try {
       const { data } = await supabase.from('restaurants_1').select('*').eq('id', restaurantId).single()
-      restaurant = data
+      if (data) restaurant = data
     } catch (err) {
       console.error('Error fetching restaurant details', err)
     }
@@ -277,6 +275,77 @@ window.toggleAddReviewForm = (forceVal) => {
   state.editingReviewInModal = null
   state.reviewActionMessage = null
   render()
+}
+
+window.handleAddAdditionalLocation = async (e) => {
+  e.preventDefault()
+  if (!state.selectedRestaurant) return
+
+  const input = e.target.elements['new_location_address']
+  const newAddr = input ? input.value.trim() : ''
+  if (!newAddr) return
+
+  const currentAddrs = Array.isArray(state.selectedRestaurant.additional_addresses)
+    ? [...state.selectedRestaurant.additional_addresses]
+    : []
+
+  currentAddrs.push(newAddr)
+
+  try {
+    await updateRestaurant(state.selectedRestaurant.id, {
+      additional_addresses: currentAddrs
+    })
+
+    state.selectedRestaurant.additional_addresses = currentAddrs
+    const listItem = state.items.find(r => r.id === state.selectedRestaurant.id)
+    if (listItem) {
+      listItem.additional_addresses = currentAddrs
+    }
+    const allItem = state.allRestaurants.find(r => r.id === state.selectedRestaurant.id)
+    if (allItem) {
+      allItem.additional_addresses = currentAddrs
+    }
+    state.reviewActionMessage = { type: 'success', text: `Added location: "${newAddr}"` }
+    render()
+  } catch (err) {
+    alert('Failed to add location: ' + err.message)
+  }
+}
+
+window.handleRemoveAdditionalLocation = async (index) => {
+  if (!state.selectedRestaurant) return
+  const currentAddrs = Array.isArray(state.selectedRestaurant.additional_addresses)
+    ? [...state.selectedRestaurant.additional_addresses]
+    : []
+
+  if (index < 0 || index >= currentAddrs.length) return
+  const removedAddr = currentAddrs[index]
+
+  if (!confirm(`Are you sure you want to remove this location?\n"${removedAddr}"`)) {
+    return
+  }
+
+  currentAddrs.splice(index, 1)
+
+  try {
+    await updateRestaurant(state.selectedRestaurant.id, {
+      additional_addresses: currentAddrs
+    })
+
+    state.selectedRestaurant.additional_addresses = currentAddrs
+    const listItem = state.items.find(r => r.id === state.selectedRestaurant.id)
+    if (listItem) {
+      listItem.additional_addresses = currentAddrs
+    }
+    const allItem = state.allRestaurants.find(r => r.id === state.selectedRestaurant.id)
+    if (allItem) {
+      allItem.additional_addresses = currentAddrs
+    }
+    state.reviewActionMessage = { type: 'success', text: `Removed location: "${removedAddr}"` }
+    render()
+  } catch (err) {
+    alert('Failed to remove location: ' + err.message)
+  }
 }
 
 window.handleCreateReview = async (e) => {
@@ -396,6 +465,13 @@ window.handleSave = async (e) => {
   if (state.activeTab === 'restaurants' || state.activeTab === 'best_of') {
     updates.business_status = formData.get('business_status') || 'OPEN'
     updates.keywords = formData.getAll('keywords')
+    const addrsRaw = formData.get('additional_addresses')
+    if (addrsRaw !== null) {
+      updates.additional_addresses = addrsRaw
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+    }
     ;[2026, 2025, 2024, 2023, 2022, 2021].forEach(year => {
       updates[`best_of_${year}`] = formData.get(`best_of_${year}`) === 'true'
     })
@@ -501,6 +577,10 @@ function renderEditModal() {
               <input type="text" name="address" value="${item.address || ''}" />
             </label>
             <label>
+              Additional Addresses (one per line)
+              <textarea name="additional_addresses" placeholder="Enter one address per line" rows="2" style="font-size: 0.875rem;">${Array.isArray(item.additional_addresses) ? item.additional_addresses.join('\n') : (item.additional_addresses || '')}</textarea>
+            </label>
+            <label>
               Keywords
               <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <select id="keyword-select" style="flex: 1; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px;">
@@ -580,7 +660,7 @@ function renderRestaurantReviewsModal() {
               <span class="status-badge status-${restaurant.status}" title="Curation Status">${restaurant.status}</span>
               <span class="business-status-badge business-status-${restaurant.business_status || 'OPEN'}" title="Business Status">● ${restaurant.business_status || 'OPEN'}</span>
             </div>
-            ${restaurant.address ? `<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">📍 ${restaurant.address}</div>` : ''}
+            ${restaurant.address ? `<div style="color: #64748b; font-size: 0.875rem; margin-top: 0.25rem;">📍 Primary Address: <strong>${restaurant.address}</strong></div>` : ''}
             ${restaurant.keywords && restaurant.keywords.length > 0 ? `
               <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-top: 0.5rem;">
                 ${restaurant.keywords.slice(0, 5).map(kw => `
@@ -591,6 +671,57 @@ function renderRestaurantReviewsModal() {
             ` : ''}
           </div>
           <button class="close-btn" onclick="window.closeRestaurantReviewsModal()" title="Close">&times;</button>
+        </div>
+
+        ${state.reviewActionMessage ? `
+          <div class="alert-banner alert-${state.reviewActionMessage.type}">
+            <span>${state.reviewActionMessage.text}</span>
+            <button type="button" class="alert-close-btn" onclick="state.reviewActionMessage = null; render()">&times;</button>
+          </div>
+        ` : ''}
+
+        <!-- Additional Locations Management Card -->
+        <div class="admin-locations-card">
+          <div class="admin-locations-header">
+            <h3 class="admin-locations-title">
+              <span>📍 Additional Locations</span>
+              <span class="admin-locations-count-badge">
+                ${(restaurant.additional_addresses || []).length}
+              </span>
+            </h3>
+          </div>
+
+          ${restaurant.additional_addresses && restaurant.additional_addresses.length > 0 ? `
+            <div class="admin-locations-list">
+              ${restaurant.additional_addresses.map((addr, idx) => `
+                <div class="admin-location-row">
+                  <div class="admin-location-info">
+                    <span class="admin-location-index">#${idx + 1}</span>
+                    <span class="admin-location-text">${addr}</span>
+                    <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}" target="_blank" rel="noopener noreferrer" class="admin-location-map-link">Map ↗</a>
+                  </div>
+                  <button type="button" class="admin-location-delete-btn" onclick="window.handleRemoveAdditionalLocation(${idx})" title="Remove this location">
+                    ✕ Remove
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <p class="admin-locations-empty">No additional locations added yet for this restaurant.</p>
+          `}
+
+          <form onsubmit="window.handleAddAdditionalLocation(event)" class="admin-location-add-form">
+            <input 
+              type="text" 
+              name="new_location_address" 
+              class="admin-location-input"
+              placeholder="Enter additional address (e.g. 576 Congress St, Portland, ME)" 
+              required 
+            />
+            <button type="submit" class="admin-location-submit-btn">
+              <span>+ Add Location</span>
+            </button>
+          </form>
         </div>
 
         <div class="reviews-management-bar">
@@ -605,13 +736,6 @@ function renderRestaurantReviewsModal() {
             ${state.isAddingReview ? '✕ Cancel' : '+ Add New Review'}
           </button>
         </div>
-
-        ${state.reviewActionMessage ? `
-          <div class="alert-banner alert-${state.reviewActionMessage.type}">
-            <span>${state.reviewActionMessage.text}</span>
-            <button type="button" class="alert-close-btn" onclick="state.reviewActionMessage = null; render()">&times;</button>
-          </div>
-        ` : ''}
 
         ${state.isAddingReview ? `
           <div class="review-form-card">
@@ -1014,6 +1138,7 @@ function renderDashboard() {
                         ${item.name}
                       </button>
                       ${item.address ? `<div class="restaurant-subtext">📍 ${item.address}</div>` : ''}
+                      ${item.additional_addresses && item.additional_addresses.length > 0 ? `<div class="restaurant-subtext" style="color: #0284c7;">+${item.additional_addresses.length} additional location${item.additional_addresses.length > 1 ? 's' : ''}</div>` : ''}
                     </div>
                   </td>
                   <td>
