@@ -93,7 +93,8 @@ window.nextWizardStep = () => {
 
 window.prevWizardStep = () => {
   const path = window.location.pathname;
-  if (path.includes('step2')) window.location.href = '/step1.html';
+  if (path.includes('step1')) window.location.href = '/';
+  else if (path.includes('step2')) window.location.href = '/step1.html';
   else if (path.includes('step3')) window.location.href = '/step2.html';
   else if (path.includes('step4')) window.location.href = '/step3.html';
 };

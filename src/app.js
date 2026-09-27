@@ -49,7 +49,7 @@ function renderApp() {
     <div class="app">
       <header class="app-header">
         <h1>Maine Menu Match</h1>
-        <p class="subtitle">Currently serving Portland Maine</p>
+        <p class="subtitle">Currently serving Greater Portland</p>
       </header>
 
       <main class="app-main">
@@ -117,6 +117,7 @@ function renderWizard() {
         `).join('')}
       </div>
       <div class="wizard-actions">
+        <button class="wizard-btn back-btn" onclick="window.prevWizardStep()">Back</button>
         <button class="wizard-btn next-btn" onclick="window.nextWizardStep()" ${!state.wizard.cuisine ? 'disabled' : ''}>Next</button>
       </div>
     `
@@ -139,7 +140,7 @@ function renderWizard() {
       <div class="wizard-question">
         <h3>Are seasonal restaurants OK?</h3>
         <div class="options-row">
-          ${['Year-round only', 'Seasonal OK', 'Does not matter'].map(o => `
+          ${['Year-round only', 'Seasonal OK'].map(o => `
             <label class="wizard-option ${state.wizard.seasonal === o ? 'selected' : ''}">
               <input type="radio" name="seasonal" value="${o}" ${state.wizard.seasonal === o ? 'checked' : ''} onchange="window.handleWizardChange('seasonal', '${o}')">
               ${o}
@@ -213,7 +214,18 @@ window.nextWizardStep = () => {
 }
 
 window.prevWizardStep = () => {
-  state.wizard.step = Math.max(1, state.wizard.step - 1)
+  if (state.wizard.step === 1) {
+    window.location.href = '/'
+  } else {
+    state.wizard.step = Math.max(1, state.wizard.step - 1)
+    render()
+  }
+}
+
+window.backToPreviousStep = () => {
+  state.results = []
+  state.error = null
+  state.wizard.step = 4
   render()
 }
 
@@ -253,7 +265,8 @@ function render() {
     document.getElementById('advanced-options').style.display = 'none'
 
     let content = `
-      <div class="search-actions-bar" style="margin-bottom: 2rem;">
+      <div class="search-actions-bar" style="margin-bottom: 2rem; display: flex; gap: 1rem;">
+        <button class="wizard-btn back-btn" onclick="window.backToPreviousStep()">Back</button>
         <button class="wizard-btn back-btn" onclick="window.resetSearch()">Start New Search</button>
       </div>
     `

@@ -109,6 +109,14 @@ window.resetSearch = () => {
   window.location.href = '/';
 };
 
+window.backToPreviousStep = () => {
+  window.location.href = '/step4.html';
+};
+
+window.prevWizardStep = () => {
+  window.location.href = '/step4.html';
+};
+
 window.selectRestaurant = (id) => {
   window.location.href = `/result.html?id=${id}`;
 };

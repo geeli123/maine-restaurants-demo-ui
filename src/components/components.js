@@ -101,11 +101,10 @@ export function renderRestaurantCard(result) {
   // Make the entire card clickable
   return `
     <div class="restaurant-card" onclick="window.selectRestaurant('${id}')" style="cursor: pointer;">
-      <div class="card-header" style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
+      <div class="card-header">
         <h3 class="restaurant-name" style="margin: 0;">
           ${name || 'Unknown Restaurant'}
         </h3>
-        ${similarity != null ? `<span class="similarity-badge" title="AI Match Score" style="font-size: 0.75rem; background: #f0f9ff; color: #0369a1; padding: 4px 8px; border-radius: 12px; border: 1px solid #bae6fd; white-space: nowrap; font-weight: bold;">${(similarity * 100).toFixed(1)}% Match</span>` : ''}
       </div>
       
       ${renderBestOfBadges(result)}
@@ -137,7 +136,7 @@ export function renderRestaurantCard(result) {
         </p>
       ` : ''}
       <div class="card-action">
-        <button class="view-details-btn">View Mentions</button>
+        <button class="view-details-btn">Keep reading</button>
       </div>
     </div>
   `
@@ -160,10 +159,7 @@ export function renderRestaurantDetails(restaurant) {
       </button>
 
       <div class="details-header">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-          <h2 style="margin: 0;">${name || 'Unknown Restaurant'}</h2>
-          ${similarity != null ? `<span class="similarity-badge" title="AI Match Score" style="font-size: 0.85rem; background: #f0f9ff; color: #0369a1; padding: 4px 10px; border-radius: 12px; border: 1px solid #bae6fd; font-weight: bold;">${(similarity * 100).toFixed(1)}% Match</span>` : ''}
-        </div>
+        <h2 style="margin: 0;">${name || 'Unknown Restaurant'}</h2>
         ${renderBestOfBadges(restaurant)}
         ${(() => {
       if (!displayLocation) return '';
@@ -203,6 +199,9 @@ export function renderRestaurantDetails(restaurant) {
       : '<p>No reviews available.</p>'}
         </div>
       </div>
+      <div style="margin-top: 2rem;">
+        <button class="wizard-btn back-btn" onclick="window.backToSearch()">Back to Search Results</button>
+      </div>
     </div>
   `
 }
@@ -212,8 +211,19 @@ export function renderSearchResults(results, searchQuery, isLoadingMore = false)
   if (results.length === 0) {
     return `
       <div class="no-results">
+        <button class="back-button" onclick="window.backToPreviousStep ? window.backToPreviousStep() : (window.prevWizardStep ? window.prevWizardStep() : window.history.back())">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Back
+        </button>
         <p>No restaurants found for "${searchQuery}"</p>
         <p class="hint">Try adjusting your search terms or being more specific</p>
+        <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+          <button class="wizard-btn back-btn" onclick="window.backToPreviousStep ? window.backToPreviousStep() : (window.prevWizardStep ? window.prevWizardStep() : window.history.back())">Back</button>
+          <button class="wizard-btn back-btn" onclick="window.resetSearch()">Click to start over</button>
+        </div>
       </div>
     `
   }
@@ -222,6 +232,13 @@ export function renderSearchResults(results, searchQuery, isLoadingMore = false)
 
   return `
     <div class="search-results">
+      <button class="back-button" onclick="window.backToPreviousStep ? window.backToPreviousStep() : (window.prevWizardStep ? window.prevWizardStep() : window.history.back())">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back
+      </button>
       <div class="results-header">
         <h2>
           Found ${results.length} restaurant${results.length !== 1 ? 's' : ''}
@@ -231,11 +248,13 @@ export function renderSearchResults(results, searchQuery, isLoadingMore = false)
       <div class="results-grid">
         ${resultsHTML}
       </div>
-      <div class="load-more-container" style="text-align: center; margin-top: 2rem;">
+      <div class="load-more-container" style="text-align: center; margin-top: 2rem; display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; align-items: center;">
+        <button class="wizard-btn back-btn" onclick="window.backToPreviousStep ? window.backToPreviousStep() : (window.prevWizardStep ? window.prevWizardStep() : window.history.back())">Back</button>
         ${isLoadingMore
       ? `<div class="spinner" style="display: inline-block; width: 24px; height: 24px; margin-right: 8px;"></div><span style="vertical-align: super;">Loading more...</span>`
       : `<button class="wizard-btn search-btn" onclick="window.loadMoreSuggestions()">Click for more suggestions</button>`
     }
+        <button class="wizard-btn back-btn" onclick="window.resetSearch()">Click to start over</button>
       </div>
     </div>
   `
