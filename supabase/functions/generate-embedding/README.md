@@ -4,11 +4,11 @@ This Supabase Edge Function converts text to vector embeddings using Google's Ge
 
 ## Setup
 
-1. **Run Database Migration for Embedding Cache**:
-Run the SQL in `sql/query_embeddings_cache.sql` in your Supabase project's SQL Editor (or via `supabase db push`). This creates:
-- The `query_embeddings_cache` table with `vector(768)`
-- An index on `query_hash` (SHA-256) for O(1) cache lookups
-- Row-Level Security policies allowing the Edge Function service role to manage the cache
+1. **Run Database Migrations for Embedding Cache & Analytics**:
+Run the SQL in `sql/query_embeddings_cache.sql` and `sql/search_analytics.sql` in your Supabase project's SQL Editor (or via `supabase db push`). This creates:
+- The `query_embeddings_cache` table with `vector(768)` and a `query_hash` (SHA-256) index for O(1) cache lookups
+- The `search_analytics` table (`query_text`, `normalized_query`, `query_hash`, `keywords`, `cache_hit`, `user_agent`, `referer`, `created_at`) with indexes on `created_at`, `normalized_query`, and a GIN index on `keywords`
+- Row-Level Security policies allowing the Edge Function service role to manage the cache and analytics tables
 
 2. **Install Supabase CLI** (if not already installed):
 ```bash

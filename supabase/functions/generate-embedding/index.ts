@@ -16,6 +16,129 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const KNOWN_WIZARD_PHRASES = [
+  'outdoor or patio seating',
+  'gluten-free options',
+  'vegan or vegetarian',
+  'sit-down restaurant',
+  'bakery/cafe cuisine',
+  'romantic atmosphere',
+  'upscale atmosphere',
+  'special occasion',
+  'pub food cuisine',
+  'american cuisine',
+  'seafood cuisine',
+  'italian cuisine',
+  'mexican cuisine',
+  'lively atmosphere',
+  'casual atmosphere',
+  'trendy atmosphere',
+  'best restaurants',
+  'other cuisine',
+  'asian cuisine',
+  'cozy atmosphere',
+  'divey atmosphere',
+  'kid-friendly',
+  'pet-friendly',
+  'food truck',
+  'year-round',
+  'budget',
+]
+
+const STOP_WORDS = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from',
+  'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on', 'or', 'that',
+  'the', 'to', 'was', 'were', 'will', 'with',
+])
+
+/**
+ * Extract structured wizard phrases and search keywords from query text
+ */
+function extractKeywords(text: string, providedKeywords?: unknown): string[] {
+  const keywords: string[] = []
+  const seen = new Set<string>()
+
+  const addKeyword = (kw: string) => {
+    const cleaned = kw.trim().toLowerCase()
+    if (cleaned && !seen.has(cleaned)) {
+      seen.add(cleaned)
+      keywords.push(cleaned)
+    }
+  }
+
+  if (Array.isArray(providedKeywords)) {
+    for (const kw of providedKeywords) {
+      if (typeof kw === 'string') addKeyword(kw)
+    }
+  }
+
+  const lower = text.trim().toLowerCase()
+  let remaining = lower
+
+  // Match known multi-word wizard phrases first, preserving their order in the query
+  const matchedPhrases: { phrase: string; index: number }[] = []
+  for (const phrase of KNOWN_WIZARD_PHRASES) {
+    const idx = remaining.indexOf(phrase)
+    if (idx !== -1) {
+      matchedPhrases.push({ phrase, index: lower.indexOf(phrase) })
+      remaining = remaining.replace(phrase, ' ')
+    }
+  }
+
+  matchedPhrases
+    .sort((a, b) => a.index - b.index)
+    .forEach(({ phrase }) => addKeyword(phrase))
+
+  // Extract any remaining freeform search words
+  const extraTokens = remaining
+    .split(/[\s,.;:!?()"']+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 1 && !STOP_WORDS.has(t))
+
+  for (const token of extraTokens) {
+    addKeyword(token)
+  }
+
+  return keywords
+}
+
+/**
+ * Record search query and keywords in public.search_analytics
+ */
+async function logSearchAnalytics(params: {
+  queryText: string
+  normalizedQuery: string
+  queryHash: string
+  keywords: string[]
+  cacheHit: boolean
+  req: Request
+}) {
+  if (!supabase) return
+
+  try {
+    const userAgent = params.req.headers.get('user-agent') || null
+    const referer = params.req.headers.get('referer') || null
+
+    const { error } = await supabase
+      .from('search_analytics')
+      .insert({
+        query_text: params.queryText,
+        normalized_query: params.normalizedQuery,
+        query_hash: params.queryHash,
+        keywords: params.keywords,
+        cache_hit: params.cacheHit,
+        user_agent: userAgent,
+        referer: referer,
+      })
+
+    if (error) {
+      console.warn('Failed to insert search analytics:', error.message)
+    }
+  } catch (err) {
+    console.warn('Error logging search analytics:', err)
+  }
+}
+
 /**
  * Compute SHA-256 hash of normalized text for exact matching
  */
@@ -55,7 +178,7 @@ serve(async (req) => {
 
   try {
     // Parse request body
-    const { text } = await req.json()
+    const { text, keywords: providedKeywords } = await req.json()
 
     // Validate input
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -68,7 +191,9 @@ serve(async (req) => {
     }
 
     const normalizedText = text.trim()
+    const lowercaseQuery = normalizedText.toLowerCase()
     const queryHash = await computeSha256(normalizedText)
+    const keywords = extractKeywords(normalizedText, providedKeywords)
 
     // 1. Check Supabase query_embeddings_cache table
     if (supabase) {
@@ -82,16 +207,24 @@ serve(async (req) => {
         if (!cacheErr && cachedRow && cachedRow.embedding) {
           const cachedEmbedding = parseEmbedding(cachedRow.embedding)
           if (cachedEmbedding && cachedEmbedding.length === 768) {
-            // Update hit count and last_accessed_at in the background
-            supabase
-              .from('query_embeddings_cache')
-              .update({
-                hit_count: (cachedRow.hit_count || 1) + 1,
-                last_accessed_at: new Date().toISOString()
+            // Update cache hit stats and record search analytics in parallel
+            await Promise.allSettled([
+              supabase
+                .from('query_embeddings_cache')
+                .update({
+                  hit_count: (cachedRow.hit_count || 1) + 1,
+                  last_accessed_at: new Date().toISOString()
+                })
+                .eq('query_hash', queryHash),
+              logSearchAnalytics({
+                queryText: normalizedText,
+                normalizedQuery: lowercaseQuery,
+                queryHash,
+                keywords,
+                cacheHit: true,
+                req
               })
-              .eq('query_hash', queryHash)
-              .then(() => {})
-              .catch((err: any) => console.warn('Failed to update cache hit stats:', err))
+            ])
 
             return new Response(
               JSON.stringify({ embedding: cachedEmbedding, cached: true }),
@@ -151,19 +284,28 @@ serve(async (req) => {
       throw new Error(`Invalid embedding dimension: expected 768, got ${embedding.length}`)
     }
 
-    // 3. Store newly generated embedding in Supabase cache
+    // 3. Store newly generated embedding in Supabase cache and record search analytics
     if (supabase) {
-      try {
-        await supabase
+      await Promise.allSettled([
+        supabase
           .from('query_embeddings_cache')
           .insert({
             query_text: normalizedText,
             query_hash: queryHash,
             embedding: embedding
           })
-      } catch (insertErr) {
-        console.warn('Failed to insert embedding into cache table:', insertErr)
-      }
+          .then(({ error }) => {
+            if (error) console.warn('Failed to insert embedding into cache table:', error.message)
+          }),
+        logSearchAnalytics({
+          queryText: normalizedText,
+          normalizedQuery: lowercaseQuery,
+          queryHash,
+          keywords,
+          cacheHit: false,
+          req
+        })
+      ])
     }
 
     // Return successful response
